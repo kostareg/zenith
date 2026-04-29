@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <array>
 
 namespace zenith_emulator {
 
@@ -10,15 +11,18 @@ class Emulator {
   Emulator() = default;
 
   void Reset();
-  void Step();
+  void Step(uint32_t);
 
   [[nodiscard]] std::uint64_t accumulator() const noexcept;
   [[nodiscard]] static std::string_view Version() noexcept;
+  [[nodiscard]] std::array<int64_t, 32> GetRegisters();
 
  private:
   std::uint64_t accumulator_ = 0;
+  std::uint64_t pc = 0;
+  std::array<int64_t, 32> registers;
 };
 
-[[nodiscard]] std::uint32_t Add(std::uint32_t lhs, std::uint32_t rhs) noexcept;
+[[nodiscard]] std::uint32_t Add(uint32_t lhs, uint32_t rhs) noexcept;
 
 }  // namespace zenith_emulator

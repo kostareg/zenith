@@ -21,7 +21,7 @@ extern "C" {
 
 ZENITH_EMULATOR_EXPORT uint32_t zenith_emulator_add(uint32_t lhs, uint32_t rhs);
 ZENITH_EMULATOR_EXPORT void zenith_emulator_reset(void);
-ZENITH_EMULATOR_EXPORT void zenith_emulator_step(void);
+ZENITH_EMULATOR_EXPORT void zenith_emulator_step(uint32_t);
 ZENITH_EMULATOR_EXPORT uint64_t zenith_emulator_version(void);
 
 #ifdef __cplusplus

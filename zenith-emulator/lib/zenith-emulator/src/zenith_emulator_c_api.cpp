@@ -26,8 +26,8 @@ extern "C" void zenith_emulator_reset(void) {
   GlobalEmulator().Reset();
 }
 
-extern "C" void zenith_emulator_step(void) {
-  GlobalEmulator().Step();
+extern "C" void zenith_emulator_step(uint32_t i) {
+  GlobalEmulator().Step(i);
 }
 
 extern "C" uint64_t zenith_emulator_version(void) {
