@@ -410,7 +410,7 @@ function updateMemoryViews() {
   HEAPU32 = new Uint32Array(b);
   HEAPF32 = new Float32Array(b);
   HEAPF64 = new Float64Array(b);
-  HEAP64 = new BigInt64Array(b);
+  Module['HEAP64'] = HEAP64 = new BigInt64Array(b);
   HEAPU64 = new BigUint64Array(b);
 }
 
@@ -1104,6 +1104,7 @@ async function createWasm() {
       return (...args) => ccall(ident, returnType, argTypes, args, opts);
     };
 
+
 // End JS library code
 
 // include: postlibrary.js
@@ -1360,7 +1361,6 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'HEAPU32',
   'HEAPF32',
   'HEAPF64',
-  'HEAP64',
   'HEAPU64',
   'stackSave',
   'stackRestore',
@@ -1575,6 +1575,8 @@ function checkIncomingModuleAPI() {
 var _zenith_emulator_add = Module['_zenith_emulator_add'] = makeInvalidEarlyAccess('_zenith_emulator_add');
 var _zenith_emulator_reset = Module['_zenith_emulator_reset'] = makeInvalidEarlyAccess('_zenith_emulator_reset');
 var _zenith_emulator_step = Module['_zenith_emulator_step'] = makeInvalidEarlyAccess('_zenith_emulator_step');
+var _zenith_emulator_get_register_count = Module['_zenith_emulator_get_register_count'] = makeInvalidEarlyAccess('_zenith_emulator_get_register_count');
+var _zenith_emulator_get_registers = Module['_zenith_emulator_get_registers'] = makeInvalidEarlyAccess('_zenith_emulator_get_registers');
 var _zenith_emulator_version = Module['_zenith_emulator_version'] = makeInvalidEarlyAccess('_zenith_emulator_version');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _strerror = makeInvalidEarlyAccess('_strerror');
@@ -1595,6 +1597,8 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['zenith_emulator_add'] != 'undefined', 'missing Wasm export: zenith_emulator_add');
   assert(typeof wasmExports['zenith_emulator_reset'] != 'undefined', 'missing Wasm export: zenith_emulator_reset');
   assert(typeof wasmExports['zenith_emulator_step'] != 'undefined', 'missing Wasm export: zenith_emulator_step');
+  assert(typeof wasmExports['zenith_emulator_get_register_count'] != 'undefined', 'missing Wasm export: zenith_emulator_get_register_count');
+  assert(typeof wasmExports['zenith_emulator_get_registers'] != 'undefined', 'missing Wasm export: zenith_emulator_get_registers');
   assert(typeof wasmExports['zenith_emulator_version'] != 'undefined', 'missing Wasm export: zenith_emulator_version');
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   assert(typeof wasmExports['strerror'] != 'undefined', 'missing Wasm export: strerror');
@@ -1611,7 +1615,9 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
   _zenith_emulator_add = Module['_zenith_emulator_add'] = createExportWrapper('zenith_emulator_add', 2);
   _zenith_emulator_reset = Module['_zenith_emulator_reset'] = createExportWrapper('zenith_emulator_reset', 0);
-  _zenith_emulator_step = Module['_zenith_emulator_step'] = createExportWrapper('zenith_emulator_step', 0);
+  _zenith_emulator_step = Module['_zenith_emulator_step'] = createExportWrapper('zenith_emulator_step', 1);
+  _zenith_emulator_get_register_count = Module['_zenith_emulator_get_register_count'] = createExportWrapper('zenith_emulator_get_register_count', 0);
+  _zenith_emulator_get_registers = Module['_zenith_emulator_get_registers'] = createExportWrapper('zenith_emulator_get_registers', 2);
   _zenith_emulator_version = Module['_zenith_emulator_version'] = createExportWrapper('zenith_emulator_version', 0);
   _fflush = createExportWrapper('fflush', 1);
   _strerror = createExportWrapper('strerror', 1);
