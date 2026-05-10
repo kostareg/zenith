@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #if defined(_WIN32)
@@ -22,6 +23,8 @@ extern "C" {
 ZENITH_EMULATOR_EXPORT uint32_t zenith_emulator_add(uint32_t lhs, uint32_t rhs);
 ZENITH_EMULATOR_EXPORT void zenith_emulator_reset(void);
 ZENITH_EMULATOR_EXPORT void zenith_emulator_step(uint32_t);
+ZENITH_EMULATOR_EXPORT size_t zenith_emulator_get_register_count(void);
+ZENITH_EMULATOR_EXPORT void zenith_emulator_get_registers(int64_t* out_registers, size_t register_count);
 ZENITH_EMULATOR_EXPORT uint64_t zenith_emulator_version(void);
 
 #ifdef __cplusplus

@@ -1,5 +1,7 @@
 #include "zenith_emulator/zenith_emulator_c_api.h"
 
+#include <algorithm>
+
 #include "zenith_emulator/zenith_emulator.h"
 
 namespace {
@@ -28,6 +30,23 @@ extern "C" void zenith_emulator_reset(void) {
 
 extern "C" void zenith_emulator_step(uint32_t i) {
   GlobalEmulator().Step(i);
+}
+
+extern "C" size_t zenith_emulator_get_register_count(void) {
+  return GlobalEmulator().GetRegisters().size();
+}
+
+extern "C" void zenith_emulator_get_registers(int64_t* out_registers, size_t register_count) {
+  if (out_registers == nullptr || register_count == 0) {
+    return;
+  }
+
+  const auto registers = GlobalEmulator().GetRegisters();
+  const auto copy_count = std::min(registers.size(), register_count);
+
+  for (size_t i = 0; i < copy_count; ++i) {
+    out_registers[i] = registers[i];
+  }
 }
 
 extern "C" uint64_t zenith_emulator_version(void) {

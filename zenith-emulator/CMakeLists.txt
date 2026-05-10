@@ -47,7 +47,7 @@ if(ZENITH_EMULATOR_BUILD_WASM)
     "SHELL:-s MODULARIZE=1"
     "SHELL:-s EXPORT_ES6=1"
     "SHELL:-s ENVIRONMENT=web,worker,node"
-    "SHELL:-s EXPORTED_FUNCTIONS=['_malloc','_free','_zenith_emulator_add','_zenith_emulator_reset','_zenith_emulator_step','_zenith_emulator_version']"
-    "SHELL:-s EXPORTED_RUNTIME_METHODS=['cwrap','ccall']"
+    "SHELL:-s EXPORTED_FUNCTIONS=['_malloc','_free','_zenith_emulator_add','_zenith_emulator_reset','_zenith_emulator_step','_zenith_emulator_get_register_count','_zenith_emulator_get_registers','_zenith_emulator_version']"
+    "SHELL:-s EXPORTED_RUNTIME_METHODS=['cwrap','ccall','HEAP64']"
   )
 endif()

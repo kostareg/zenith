@@ -1,8 +1,9 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
-#include <array>
 
 namespace zenith_emulator {
 
@@ -18,9 +19,12 @@ class Emulator {
   [[nodiscard]] std::array<int64_t, 32> GetRegisters();
 
  private:
+  static constexpr std::size_t kMemorySize = 64 * 1024;
+
   std::uint64_t accumulator_ = 0;
   std::uint64_t pc = 0;
-  std::array<int64_t, 32> registers;
+  std::array<int64_t, 32> registers{};
+  std::array<std::uint8_t, kMemorySize> memory{};
 };
 
 [[nodiscard]] std::uint32_t Add(uint32_t lhs, uint32_t rhs) noexcept;
