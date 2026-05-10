@@ -3,25 +3,23 @@
 #include "zenith_emulator/zenith_emulator.h"
 
 int main() {
-  zenith_emulator::Emulator emulator;
-  emulator.Reset();
+    zenith_emulator::Emulator emulator;
+    emulator.reset();
 
-  std::cout
-      << "Zenith emulator bootstrap\n"
-      << "version: " << zenith_emulator::Emulator::Version() << '\n'
-      << "accumulator: " << emulator.accumulator() << '\n'
-      << "2 + 3 = " << zenith_emulator::Add(2, 3) << '\n';
+    std::cout << "Zenith emulator bootstrap\n"
+              << "version: " << zenith_emulator::Emulator::version() << '\n'
+              << "2 + 3 = " << zenith_emulator::Emulator::add(2, 3) << '\n';
 
-  uint32_t i;
-  while (std::cout << "> 0x", std::cin >> std::hex >> i) {
-    emulator.Step(i);
-    std::cout << std::dec;
-  }
+    uint32_t i;
+    while (std::cout << "> 0x", std::cin >> std::hex >> i) {
+        emulator.step(i);
+        std::cout << std::dec;
+    }
 
-  auto registers = emulator.GetRegisters();
-  for (int i = 0; i < 32; ++i) {
-    std::cout << "register " << i << ": " << registers[i] << std::endl;
-  }
+    auto registers = emulator.get_registers();
+    for (int i = 0; i < 32; ++i) {
+        std::cout << "register " << i << ": " << registers[i] << std::endl;
+    }
 
-  return 0;
+    return 0;
 }

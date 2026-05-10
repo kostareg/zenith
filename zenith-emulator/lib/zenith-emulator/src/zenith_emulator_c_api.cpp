@@ -6,49 +6,49 @@
 
 namespace {
 
-zenith_emulator::Emulator& GlobalEmulator() {
-  static zenith_emulator::Emulator emulator;
-  return emulator;
+zenith_emulator::Emulator& global_emulator() {
+    static zenith_emulator::Emulator emulator;
+    return emulator;
 }
 
-std::uint64_t PackVersion() {
-  constexpr std::uint64_t major = 0;
-  constexpr std::uint64_t minor = 1;
-  constexpr std::uint64_t patch = 0;
-  return (major << 32U) | (minor << 16U) | patch;
+std::uint64_t pack_version() {
+    constexpr std::uint64_t major = 0;
+    constexpr std::uint64_t minor = 1;
+    constexpr std::uint64_t patch = 0;
+    return (major << 32U) | (minor << 16U) | patch;
 }
 
-}  // namespace
+} // namespace
 
 extern "C" uint32_t zenith_emulator_add(uint32_t lhs, uint32_t rhs) {
-  return zenith_emulator::Add(lhs, rhs);
+    return zenith_emulator::Emulator::add(lhs, rhs);
 }
 
 extern "C" void zenith_emulator_reset(void) {
-  GlobalEmulator().Reset();
+    global_emulator().reset();
 }
 
 extern "C" void zenith_emulator_step(uint32_t i) {
-  GlobalEmulator().Step(i);
+    global_emulator().step(i);
 }
 
 extern "C" size_t zenith_emulator_get_register_count(void) {
-  return GlobalEmulator().GetRegisters().size();
+    return global_emulator().get_registers().size();
 }
 
 extern "C" void zenith_emulator_get_registers(int64_t* out_registers, size_t register_count) {
-  if (out_registers == nullptr || register_count == 0) {
-    return;
-  }
+    if (out_registers == nullptr || register_count == 0) {
+        return;
+    }
 
-  const auto registers = GlobalEmulator().GetRegisters();
-  const auto copy_count = std::min(registers.size(), register_count);
+    const auto registers = global_emulator().get_registers();
+    const auto copy_count = std::min(registers.size(), register_count);
 
-  for (size_t i = 0; i < copy_count; ++i) {
-    out_registers[i] = registers[i];
-  }
+    for (size_t i = 0; i < copy_count; ++i) {
+        out_registers[i] = registers[i];
+    }
 }
 
 extern "C" uint64_t zenith_emulator_version(void) {
-  return PackVersion();
+    return pack_version();
 }
