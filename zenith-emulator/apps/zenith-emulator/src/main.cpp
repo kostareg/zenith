@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "zenith_emulator/zenith_emulator.h"
+#include "zenith_emulator/zenith_emulator.hpp"
 
 int main() {
     zenith_emulator::Emulator emulator;

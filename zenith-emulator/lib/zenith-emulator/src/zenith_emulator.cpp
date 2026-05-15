@@ -1,9 +1,16 @@
-#include "zenith_emulator/zenith_emulator.h"
+#include "zenith_emulator/zenith_emulator.hpp"
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+
+#ifdef __EMSCRIPTEN__
+  #include <emscripten/bind.h>
+  #include <emscripten/val.h>
+
+  #include <string>
+#endif
 
 namespace zenith_emulator {
 namespace {
@@ -338,3 +345,35 @@ std::array<int64_t, 32> Emulator::get_registers() {
 }
 
 } // namespace zenith_emulator
+
+#ifdef __EMSCRIPTEN__
+namespace {
+
+emscripten::val get_registers(zenith_emulator::Emulator& emulator) {
+    const auto registers = emulator.get_registers();
+    auto result = emscripten::val::array();
+    const auto big_int = emscripten::val::global("BigInt");
+
+    for (std::size_t i = 0; i < registers.size(); ++i) {
+        result.set(i, big_int(std::to_string(registers[i])));
+    }
+
+    return result;
+}
+
+std::string version() {
+    return std::string(zenith_emulator::Emulator::version());
+}
+
+} // namespace
+
+EMSCRIPTEN_BINDINGS(zenith_emulator) {
+    emscripten::class_<zenith_emulator::Emulator>("Emulator")
+        .constructor<>()
+        .function("reset", &zenith_emulator::Emulator::reset)
+        .function("step", &zenith_emulator::Emulator::step)
+        .function("getRegisters", &get_registers)
+        .class_function("add", &zenith_emulator::Emulator::add)
+        .class_function("version", &version);
+}
+#endif

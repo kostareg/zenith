@@ -5,7 +5,6 @@ target_compile_features(zenith-emulator-compile-options INTERFACE cxx_std_20)
 
 add_library(zenith-emulator
   src/zenith_emulator.cpp
-  src/zenith_emulator_c_api.cpp
 )
 
 add_library(zenith-emulator::zenith-emulator ALIAS zenith-emulator)

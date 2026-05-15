@@ -23,11 +23,16 @@ cmake --build --preset wasm-debug
 cp ./build/wasm-debug/zenith-emulator.{js,wasm} ../zenith-web/public/
 ```
 
-The WebAssembly build emits `build/wasm-debug/zenith-emulator.js` and the paired `.wasm` binary. The generated module exports:
+The WebAssembly build emits `build/wasm-debug/zenith-emulator.js` and the paired `.wasm` binary. The generated module exports the embind `Emulator` class:
 
-- `zenith_emulator_add`
-- `zenith_emulator_reset`
-- `zenith_emulator_step`
-- `zenith_emulator_version`
+```js
+import createModule from "./zenith-emulator.js";
 
-From JavaScript you can import the generated ES module and call the C exports with `cwrap` or `ccall`.
+const module = await createModule();
+const emulator = new module.Emulator();
+
+emulator.reset();
+emulator.step(0x04);
+console.log(emulator.getRegisters());
+console.log(module.Emulator.version());
+```

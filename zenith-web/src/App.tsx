@@ -278,7 +278,7 @@ export function App() {
           nextRegisters
         )
         emulator.step(instruction.value)
-        nextRegisters = emulator.get_registers()
+        nextRegisters = emulator.getRegisters()
         nextInstructionIndex = resolvedInstructionIndex
         executed += 1
       }
@@ -302,7 +302,7 @@ export function App() {
     setIsRunning(false)
     emulator?.reset()
     setRegisters(
-      emulator?.get_registers() ??
+      emulator?.getRegisters() ??
         Array.from({ length: REGISTER_COUNT }, () => 0n)
     )
     setInstructionIndex(0)
@@ -333,7 +333,7 @@ export function App() {
       registers
     )
     emulator.step(instruction.value)
-    setRegisters(emulator.get_registers())
+    setRegisters(emulator.getRegisters())
     setInstructionIndex(nextInstructionIndex)
     setLastMessage(
       `Executed line ${instruction.lineNumber}: ${instruction.text}`
