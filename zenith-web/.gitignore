@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated webassembly and JS
+public/zenith-emulator.js
+public/zenith-emulator.wasm

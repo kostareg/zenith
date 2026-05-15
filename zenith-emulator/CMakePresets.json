@@ -9,7 +9,7 @@
     {
       "name": "native-debug",
       "displayName": "Native Debug",
-      "generator": "Unix Makefiles",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/native-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -18,9 +18,8 @@
     {
       "name": "wasm-debug",
       "displayName": "WASM Debug",
-      "generator": "Unix Makefiles",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wasm-debug",
-      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "ZENITH_EMULATOR_BUILD_APPS": "OFF",

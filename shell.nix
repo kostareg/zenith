@@ -3,6 +3,7 @@
     # C++
     gcc
     cmake
+    ninja
 
     # Web development
     bun

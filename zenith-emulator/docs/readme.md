@@ -18,8 +18,9 @@ cmake --build --preset native-debug
 Install and activate Emscripten first so the `EMSCRIPTEN` environment variable points at the SDK, then run:
 
 ```bash
-cmake --preset wasm-debug
+emcmake cmake --preset wasm-debug
 cmake --build --preset wasm-debug
+cp ./build/wasm-debug/zenith-emulator.{js,wasm} ../zenith-web/public/
 ```
 
 The WebAssembly build emits `build/wasm-debug/zenith-emulator.js` and the paired `.wasm` binary. The generated module exports:
