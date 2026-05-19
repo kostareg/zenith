@@ -6,9 +6,9 @@ import App from "./App.tsx";
 import { ZenithEmulatorProvider } from "@/components/zenith-emulator-provider.tsx";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ZenithEmulatorProvider>
-      <App />
-    </ZenithEmulatorProvider>
-  </StrictMode>
+    <StrictMode>
+        <ZenithEmulatorProvider>
+            <App />
+        </ZenithEmulatorProvider>
+    </StrictMode>
 );
