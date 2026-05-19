@@ -47,5 +47,6 @@ if(ZENITH_EMULATOR_BUILD_WASM)
     "SHELL:-s EXPORT_ES6=1"
     "SHELL:-s ENVIRONMENT=web,worker,node"
     "SHELL:-lembind"
+    "SHELL:--emit-tsd zenith-emulator.d.ts"
   )
 endif()

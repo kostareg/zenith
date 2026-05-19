@@ -174,7 +174,7 @@ function resolveNextInstructionIndex(
 }
 
 export function App() {
-  const { emulator, error, isLoading } = useZenithEmulator()
+  const emulator = useZenithEmulator()
   const [source, setSource] = useState(DEFAULT_PROGRAM)
   const [registers, setRegisters] = useState<Array<bigint>>(
     Array.from({ length: REGISTER_COUNT }, () => 0n)
@@ -465,12 +465,7 @@ export function App() {
             </span>
           </div>
           <div className="min-h-0 overflow-auto p-4 font-mono text-xs leading-6">
-            {isLoading ? <p>Loading emulator...</p> : null}
-            {error ? (
-              <p className="text-destructive">
-                Failed to load emulator: {error.message}
-              </p>
-            ) : null}
+            {!emulator ? <p>Loading emulator...</p> : null}
             {parseResult.errors.length > 0 ? (
               <div className="text-destructive">
                 {parseResult.errors.map((parseError) => (

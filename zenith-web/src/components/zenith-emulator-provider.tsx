@@ -1,31 +1,7 @@
 import * as React from "react";
+import createModule, { type Emulator } from "@/wasm/zenith-emulator";
 
-type ZenithEmulator = {
-  reset: () => void;
-  step: (instruction: number) => void;
-  getRegisters: () => Array<bigint>;
-  delete: () => void;
-};
-
-type ZenithModule = {
-  Emulator: {
-    new (): ZenithEmulator;
-  };
-};
-
-type ZenithModuleFactory = (options?: {
-  locateFile?: (path: string) => string;
-}) => Promise<ZenithModule>;
-
-type ZenithEmulatorContextValue = {
-  emulator: ZenithEmulator | null;
-  error: Error | null;
-  isLoading: boolean;
-};
-
-const ZenithEmulatorContext = React.createContext<
-  ZenithEmulatorContextValue | undefined
->(undefined);
+const ZenithEmulatorContext = React.createContext<Emulator | null>(null);
 
 type ZenithEmulatorProviderProps = {
   children: React.ReactNode;
@@ -34,82 +10,23 @@ type ZenithEmulatorProviderProps = {
 export function ZenithEmulatorProvider({
   children,
 }: ZenithEmulatorProviderProps) {
-  const [emulator, setEmulator] = React.useState<ZenithEmulator | null>(null);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [emulator, setEmulator] = React.useState<Emulator | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    let cancelled = false;
-    let loadedEmulator: ZenithEmulator | null = null;
-
-    void (async () => {
-      try {
-        const response = await fetch("/zenith-emulator.js");
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch Zenith emulator module: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const source = await response.text();
-        const blob = new Blob([source], { type: "text/javascript" });
-        const blobUrl = URL.createObjectURL(blob);
-        let createModule: ZenithModuleFactory;
-
-        try {
-          ({ default: createModule } = (await import(
-            /* @vite-ignore */ blobUrl
-          )) as { default: ZenithModuleFactory });
-        } finally {
-          URL.revokeObjectURL(blobUrl);
-        }
-
-        const module = await createModule({
-          locateFile: (path) => `/${path}`,
-        });
-        const nextEmulator = new module.Emulator();
-        loadedEmulator = nextEmulator;
-
-        if (cancelled) {
-          nextEmulator.delete();
-          return;
-        }
-
-        setEmulator(nextEmulator);
-      } catch (caughtError) {
-        if (cancelled) {
-          return;
-        }
-
-        setError(
-          caughtError instanceof Error
-            ? caughtError
-            : new Error("Failed to load the Zenith emulator module.")
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      loadedEmulator?.delete();
+    const load = async () => {
+      const module = await createModule();
+      const emulator = new module.Emulator();
+      setEmulator(emulator);
+      setIsLoading(false);
+      console.info("zenith emulator successfully loaded");
     };
+
+    load();
   }, []);
 
-  const value = React.useMemo(
-    () => ({
-      emulator,
-      error,
-      isLoading,
-    }),
-    [emulator, error, isLoading]
-  );
-
   return (
-    <ZenithEmulatorContext.Provider value={value}>
+    <ZenithEmulatorContext.Provider value={emulator}>
       {children}
     </ZenithEmulatorContext.Provider>
   );

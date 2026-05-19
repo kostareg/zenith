@@ -20,7 +20,7 @@ Install and activate Emscripten first so the `EMSCRIPTEN` environment variable p
 ```bash
 emcmake cmake --preset wasm-debug
 cmake --build --preset wasm-debug
-cp ./build/wasm-debug/zenith-emulator.{js,wasm} ../zenith-web/public/
+cp ./build/wasm-debug/zenith-emulator.{js,wasm,d.ts} ../zenith-web/src/wasm/
 ```
 
 The WebAssembly build emits `build/wasm-debug/zenith-emulator.js` and the paired `.wasm` binary. The generated module exports the embind `Emulator` class:
