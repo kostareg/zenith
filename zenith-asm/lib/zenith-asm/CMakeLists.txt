@@ -6,6 +6,7 @@ target_compile_features(zenith-asm-compile-options INTERFACE cxx_std_20)
 add_library(zenith-asm
   src/zenith/assembler.cpp
   src/zenith/lexer.cpp
+  src/zenith/parser.cpp
 )
 
 add_library(zenith-asm::zenith-asm ALIAS zenith-asm)

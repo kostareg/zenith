@@ -45,7 +45,7 @@ console.log(assembler.version());
   mylabel: add r1, r1, r1
   j mylabel # desugars to jal ...
 
-# define exact data in bss
-.bss
+# define exact data in data
+.data
   label: .byte 100
 ```
