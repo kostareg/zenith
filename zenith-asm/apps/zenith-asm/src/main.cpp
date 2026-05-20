@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #include "zenith/assembler.hpp"
 #include "zenith/compiler.hpp"
@@ -8,23 +9,23 @@
 
 using namespace zenith::assembler;
 
-int main() {
-    std::cout << "Zenith assembler" << std::endl;
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "file not specified or too many arguments" << std::endl;
+        return 1;
+    }
 
-    std::string test_program = R"(# lines that start with # are comments
-# start with .main
-.main
-  add r0, r0, r1
-  # define a label before a section to reference it later
-  mylabel: add r1, r1, r1
-  j mylabel # desugars to jal ...
+    std::cout << "Zenith assembler" << std::endl
+              << "assembling " << argv[1] << std::endl;
 
-# define exact data in data
-.data
-  label: .byte 100)";
-    std::vector<unsigned char> test_program_v(test_program.begin(), test_program.end());
+    std::ifstream file(argv[1]);
+    
+    auto program = std::vector<unsigned char>(
+        std::istreambuf_iterator<char>(file),
+        std::istreambuf_iterator<char>()
+    );
 
-    Lexer lexer(test_program_v);
+    Lexer lexer(program);
 
     std::cout << "------ lexer ------" << std::endl;
 
@@ -47,9 +48,11 @@ int main() {
 
     std::cout << std::hex;
     for (auto& x : compiled) {
-      std::cout << "0x" << x << std::endl;
+        std::cout << "0x" << x << std::endl;
     }
     std::cout << std::dec;
+
+    // todo: .data section
 
     return 0;
 }
