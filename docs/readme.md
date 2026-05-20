@@ -1,6 +1,6 @@
 ## Zenith
 
-Zenith is a 64-bit CPU and tensor accelerator.
+Zenith is a 64-bit CPU and tensor accelerator. For the specification, see `docs/v0.1.0.md`.
 
 ### Development Dependencies
 
