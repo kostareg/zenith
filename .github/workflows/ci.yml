@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-native-emulator:
+    name: Build native emulator
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build
+        run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
+        working-directory: zenith-emulator
+
+  build-native-asm:
+    name: Build native asm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build
+        run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
+        working-directory: zenith-asm
+
+  build-wasm-emulator:
+    name: Build wasm emulator
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build
+        run: nix develop --command bash -lc 'emcmake cmake --preset wasm-debug && cmake --build --preset wasm-debug'
+        working-directory: zenith-emulator
+
+      - name: Upload wasm emulator
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenith-emulator-wasm
+          path: |
+            zenith-emulator/build/wasm-debug/zenith-emulator.js
+            zenith-emulator/build/wasm-debug/zenith-emulator.wasm
+            zenith-emulator/build/wasm-debug/zenith-emulator.d.ts
+          if-no-files-found: error
+
+  build-wasm-asm:
+    name: Build wasm asm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build
+        run: nix develop --command bash -lc 'emcmake cmake --preset wasm-debug && cmake --build --preset wasm-debug'
+        working-directory: zenith-asm
+
+      - name: Upload wasm asm
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenith-asm-wasm
+          path: |
+            zenith-asm/build/wasm-debug/zenith-asm.js
+            zenith-asm/build/wasm-debug/zenith-asm.wasm
+            zenith-asm/build/wasm-debug/zenith-asm.d.ts
+          if-no-files-found: error
+
+  build-web:
+    name: Build web
+    runs-on: ubuntu-latest
+    needs:
+      - build-wasm-emulator
+      - build-wasm-asm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Download wasm emulator
+        uses: actions/download-artifact@v4
+        with:
+          name: zenith-emulator-wasm
+          path: zenith-web/src/wasm
+
+      - name: Download wasm asm
+        uses: actions/download-artifact@v4
+        with:
+          name: zenith-asm-wasm
+          path: zenith-web/src/wasm
+
+      - name: Install dependencies
+        run: nix develop --command bash -lc 'bun install --frozen-lockfile'
+        working-directory: zenith-web
+
+      - name: Build
+        run: nix develop --command bash -lc 'bun run build'
+        working-directory: zenith-web
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Configure Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload web dist
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: zenith-web/dist
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

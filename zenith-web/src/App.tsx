@@ -4,7 +4,6 @@ import { Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
-import { useZenithAssembler } from "@/components/wasm/zenith-asm-provider";
 import { Button } from "@/components/ui/button";
 
 const REGISTER_COUNT = 32;
