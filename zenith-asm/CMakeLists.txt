@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(ZENITH_ASM_BUILD_APPS "Build native Zenith asm applications" ON)
 option(ZENITH_ASM_BUILD_WASM "Build the Emscripten JS/WASM module" OFF)
+option(ZENITH_ASM_BUILD_TESTS "Build Zenith asm unit tests" ON)
 
 if(MSVC)
   add_compile_options(/W4 /permissive-)
@@ -19,6 +20,13 @@ add_subdirectory(lib/zenith-asm)
 
 if(ZENITH_ASM_BUILD_APPS)
   add_subdirectory(apps/zenith-asm)
+endif()
+
+if(ZENITH_ASM_BUILD_TESTS AND NOT EMSCRIPTEN)
+  include(CTest)
+  if(BUILD_TESTING)
+    add_subdirectory(tests)
+  endif()
 endif()
 
 if(ZENITH_ASM_BUILD_WASM)

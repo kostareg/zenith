@@ -11,6 +11,7 @@ This directory contains the C++ assembler for Zenith. It is organized as:
 cmake --preset native-debug
 cmake --build --preset native-debug
 ./build/native-debug/apps/zenith-asm/zenith-asm-app
+ctest --test-dir build/native-debug --output-on-failure
 ```
 
 ## WebAssembly build

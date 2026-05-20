@@ -34,7 +34,7 @@ jobs:
         working-directory: zenith-emulator
 
   build-native-asm:
-    name: Build native asm
+    name: Build and test native asm
     runs-on: ubuntu-latest
 
     steps:
@@ -49,6 +49,10 @@ jobs:
 
       - name: Build
         run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
+        working-directory: zenith-asm
+
+      - name: Test
+        run: nix develop --command bash -lc 'ctest --test-dir build/native-debug --output-on-failure'
         working-directory: zenith-asm
 
   build-wasm-emulator:

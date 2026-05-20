@@ -16,6 +16,7 @@ std::vector<Token> Lexer::lex() const {
             ++i;
             while (i < bytes.size() && bytes[i] != '\n')
                 ++i;
+            tts.push_back(make_single_char_token(TokenType::NewLine, i));
             continue;
         }
         case '\n': {
