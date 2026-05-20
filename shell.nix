@@ -1,9 +1,10 @@
 {pkgs}: let
   buildInputs = with pkgs; [
     # C++
-    gcc
+    gcc # todo: clang
     cmake
     ninja
+    clang-tools
 
     # Web development
     bun

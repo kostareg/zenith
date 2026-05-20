@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace zenith_emulator {
+namespace zenith::emulator {
 
 class Emulator {
   public:
@@ -70,11 +70,8 @@ class Emulator {
         return base + static_cast<std::uint64_t>(offset);
     }
 
-    [[nodiscard]] static constexpr std::uint32_t add(uint32_t lhs, uint32_t rhs) noexcept {
-        return lhs + rhs;
-    }
-
   private:
+    // todo: we actually have 1GiB memory
     static constexpr std::size_t kMemorySize = 64 * 1024;
 
     [[nodiscard]] static bool is_memory_access_in_bounds(
@@ -93,4 +90,4 @@ class Emulator {
     std::array<std::uint8_t, kMemorySize> memory{};
 };
 
-} // namespace zenith_emulator
+} // namespace zenith::emulator

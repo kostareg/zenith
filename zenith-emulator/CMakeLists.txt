@@ -27,7 +27,7 @@ if(ZENITH_EMULATOR_BUILD_WASM)
   endif()
 
   add_executable(zenith-emulator-wasm
-    lib/zenith-emulator/src/zenith_emulator.cpp
+    lib/zenith-emulator/src/zenith/emulator.cpp
   )
 
   target_link_libraries(zenith-emulator-wasm PRIVATE zenith-emulator::compile-options)

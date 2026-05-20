@@ -1,36 +1,19 @@
-#include "zenith_emulator/zenith_emulator.hpp"
+#include "zenith/emulator.hpp"
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 
-#ifdef __EMSCRIPTEN__
-  #include <emscripten/bind.h>
-  #include <emscripten/val.h>
-
-  #include <string>
-#endif
-
-namespace zenith_emulator {
-namespace {
-
-constexpr std::uint64_t kInstructionSizeBytes = 4;
-
-} // namespace
+namespace zenith::emulator {
 
 bool Emulator::is_memory_access_in_bounds(
     const std::array<std::uint8_t, kMemorySize>& memory, std::uint64_t address, std::size_t width
 ) noexcept {
     const auto memory_size = static_cast<std::uint64_t>(memory.size());
-    if (address > memory_size) {
-        return false;
-    }
 
-    if (width > memory.size()) {
-        return false;
-    }
-
+    if (address > memory_size) return false;
+    if (width > memory.size()) return false;
     return address <= memory_size - width;
 }
 
@@ -38,9 +21,7 @@ std::uint64_t Emulator::read_little_endian(
     const std::array<std::uint8_t, kMemorySize>& memory, std::uint64_t address, std::size_t width, bool& ok
 ) noexcept {
     ok = is_memory_access_in_bounds(memory, address, width);
-    if (!ok) {
-        return 0;
-    }
+    if (!ok) return 0;
 
     std::uint64_t value = 0;
     const auto start = static_cast<std::size_t>(address);
@@ -53,9 +34,7 @@ std::uint64_t Emulator::read_little_endian(
 bool Emulator::write_little_endian(
     std::array<std::uint8_t, kMemorySize>& memory, std::uint64_t address, std::size_t width, std::uint64_t value
 ) noexcept {
-    if (!is_memory_access_in_bounds(memory, address, width)) {
-        return false;
-    }
+    if (!is_memory_access_in_bounds(memory, address, width)) return false;
 
     const auto start = static_cast<std::size_t>(address);
     for (std::size_t i = 0; i < width; ++i) {
@@ -68,13 +47,9 @@ std::uint64_t Emulator::signed_divide(std::uint64_t lhs_bits, std::uint64_t rhs_
     const auto lhs = std::bit_cast<std::int64_t>(lhs_bits);
     const auto rhs = std::bit_cast<std::int64_t>(rhs_bits);
     ok = rhs != 0;
-    if (rhs == 0) {
-        return 0;
-    }
 
-    if (lhs == std::numeric_limits<std::int64_t>::min() && rhs == -1) {
-        return lhs_bits;
-    }
+    if (rhs == 0) return 0;
+    if (lhs == std::numeric_limits<std::int64_t>::min() && rhs == -1) return lhs_bits;
 
     return std::bit_cast<std::uint64_t>(lhs / rhs);
 }
@@ -91,9 +66,7 @@ void Emulator::step(std::uint32_t instruction) {
     };
     const auto read_register_signed = [this](std::uint32_t index) noexcept { return registers[index]; };
     const auto write_register_bits = [this](std::uint32_t index, std::uint64_t value) noexcept {
-        if (index == 0) {
-            return;
-        }
+        if (index == 0) return;
 
         registers[index] = std::bit_cast<std::int64_t>(value);
     };
@@ -105,9 +78,7 @@ void Emulator::step(std::uint32_t instruction) {
                              ) noexcept {
         bool ok = false;
         const auto value = read_little_endian(memory, address, width, ok);
-        if (!ok) {
-            return;
-        }
+        if (!ok) return;
 
         switch (width) {
         case 1:
@@ -128,7 +99,7 @@ void Emulator::step(std::uint32_t instruction) {
     };
 
     const auto op = static_cast<Operator>(instruction & 0x7FU);
-    std::uint64_t next_pc = pc + kInstructionSizeBytes;
+    std::uint64_t next_pc = pc + 4;
 
     switch (op) {
     case Operator::Add: {
@@ -158,9 +129,7 @@ void Emulator::step(std::uint32_t instruction) {
         const auto rs2 = decode_field_3(instruction);
         bool ok = false;
         const auto quotient = signed_divide(read_register_bits(rs1), read_register_bits(rs2), ok);
-        if (ok) {
-            write_register_bits(rd, quotient);
-        }
+        if (ok) write_register_bits(rd, quotient);
         break;
     }
     case Operator::Addi: {
@@ -184,9 +153,7 @@ void Emulator::step(std::uint32_t instruction) {
         bool ok = false;
         const auto quotient =
             signed_divide(read_register_bits(rs1), std::bit_cast<std::uint64_t>(static_cast<std::int64_t>(imm)), ok);
-        if (ok) {
-            write_register_bits(rd, quotient);
-        }
+        if (ok) write_register_bits(rd, quotient);
         break;
     }
     case Operator::BitAnd: {
@@ -269,49 +236,43 @@ void Emulator::step(std::uint32_t instruction) {
     case Operator::Beq: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) == read_register_signed(rs2)) {
+        if (read_register_signed(rs1) == read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Bne: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) != read_register_signed(rs2)) {
+        if (read_register_signed(rs1) != read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Bge: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) >= read_register_signed(rs2)) {
+        if (read_register_signed(rs1) >= read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Ble: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) <= read_register_signed(rs2)) {
+        if (read_register_signed(rs1) <= read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Bgt: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) > read_register_signed(rs2)) {
+        if (read_register_signed(rs1) > read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Blt: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) < read_register_signed(rs2)) {
+        if (read_register_signed(rs1) < read_register_signed(rs2))
             next_pc = add_offset(pc, decode_imm_15(instruction));
-        }
         break;
     }
     case Operator::Jal: {
@@ -328,7 +289,7 @@ void Emulator::step(std::uint32_t instruction) {
         break;
     }
     default:
-        // Tensor and system opcodes are intentionally left for future work.
+        // todo: tensor and system
         break;
     }
 
@@ -344,12 +305,16 @@ std::array<int64_t, 32> Emulator::get_registers() {
     return registers;
 }
 
-} // namespace zenith_emulator
+} // namespace zenith::emulator
 
 #ifdef __EMSCRIPTEN__
-namespace {
 
-emscripten::val get_registers(zenith_emulator::Emulator& emulator) {
+#include <emscripten/bind.h>
+#include <emscripten/val.h>
+
+#include <string>
+
+emscripten::val get_registers(zenith::emulator::Emulator& emulator) {
     const auto registers = emulator.get_registers();
     auto result = emscripten::val::array();
     const auto big_int = emscripten::val::global("BigInt");
@@ -362,18 +327,16 @@ emscripten::val get_registers(zenith_emulator::Emulator& emulator) {
 }
 
 std::string version() {
-    return std::string(zenith_emulator::Emulator::version());
+    return std::string(zenith::emulator::Emulator::version());
 }
-
-} // namespace
 
 EMSCRIPTEN_BINDINGS(zenith_emulator) {
-    emscripten::class_<zenith_emulator::Emulator>("Emulator")
+    emscripten::class_<zenith::emulator::Emulator>("Emulator")
         .constructor<>()
-        .function("reset", &zenith_emulator::Emulator::reset)
-        .function("step", &zenith_emulator::Emulator::step)
+        .function("reset", &zenith::emulator::Emulator::reset)
+        .function("step", &zenith::emulator::Emulator::step)
         .function("getRegisters", &get_registers)
-        .class_function("add", &zenith_emulator::Emulator::add)
         .class_function("version", &version);
 }
-#endif
+
+#endif // __EMSCRIPTEN__

@@ -4,7 +4,7 @@ add_library(zenith-emulator::compile-options ALIAS zenith-emulator-compile-optio
 target_compile_features(zenith-emulator-compile-options INTERFACE cxx_std_20)
 
 add_library(zenith-emulator
-  src/zenith_emulator.cpp
+  src/zenith/emulator.cpp
 )
 
 add_library(zenith-emulator::zenith-emulator ALIAS zenith-emulator)

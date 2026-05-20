@@ -1,7 +1,6 @@
 BasedOnStyle: LLVM
 Language: Cpp
 
-# Rustfmt-inspired defaults.
 IndentWidth: 4
 ContinuationIndentWidth: 4
 ColumnLimit: 120
@@ -12,7 +11,7 @@ AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: false
 
 BinPackArguments: false
