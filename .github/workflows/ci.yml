@@ -21,10 +21,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Build
         run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
@@ -36,10 +39,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Build
         run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
@@ -51,10 +57,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Build
         run: nix develop --command bash -lc 'emcmake cmake --preset wasm-debug && cmake --build --preset wasm-debug'
@@ -76,10 +85,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Build
         run: nix develop --command bash -lc 'emcmake cmake --preset wasm-debug && cmake --build --preset wasm-debug'
@@ -104,10 +116,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Download wasm emulator
         uses: actions/download-artifact@v4
