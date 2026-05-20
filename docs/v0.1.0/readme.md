@@ -303,3 +303,15 @@ cause. Trap cause values are defined by the trap specification.
 
 Unless otherwise specified by the kernel ABI, `SYS_RUN` preserves the caller's registers except for `a0`, `a1`, and
 kernel scratch registers.
+
+### Memory Map
+
+Zenith v0.1.0 defines the following physical address map:
+
+| Address range                                     | Region   | Description |
+|---------------------------------------------------|----------|-------------|
+| `0x0000_0000_0000_0000` - `0x0000_0000_3FFF_FFFF` | RAM      | 1 GiB of main memory |
+| `0x0000_0000_4000_0000` - `0xFFFF_FFFF_EFFF_FFFF` | reserved | reserved for future use |
+| `0xFFFF_FFFF_F000_0000` - `0xFFFF_FFFF_FFFF_FFFF` | MMIO     | memory-mapped I/O devices |
+
+Accesses to reserved address ranges trap. MMIO addresses are device-defined and are not normal RAM.
