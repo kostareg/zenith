@@ -31,5 +31,5 @@ import createModule from "./zenith-asm.js";
 const module = await createModule();
 const assembler = new module.Assembler();
 
-// todo
+console.log(assembler.version());
 ```
