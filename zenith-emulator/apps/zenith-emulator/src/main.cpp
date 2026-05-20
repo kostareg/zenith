@@ -1,14 +1,13 @@
 #include <iostream>
 
-#include "zenith_emulator/zenith_emulator.hpp"
+#include "zenith/emulator.hpp"
 
 int main() {
-    zenith_emulator::Emulator emulator;
+    zenith::emulator::Emulator emulator;
     emulator.reset();
 
-    std::cout << "Zenith emulator bootstrap\n"
-              << "version: " << zenith_emulator::Emulator::version() << '\n'
-              << "2 + 3 = " << zenith_emulator::Emulator::add(2, 3) << '\n';
+    std::cout << "Zenith emulator native build\n"
+              << "Version: " << zenith::emulator::Emulator::version() << '\n';
 
     uint32_t i;
     while (std::cout << "> 0x", std::cin >> std::hex >> i) {

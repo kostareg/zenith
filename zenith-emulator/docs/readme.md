@@ -1,6 +1,6 @@
 # Zenith Emulator
 
-This directory contains the C++ emulator project for Zenith. It is organized as:
+This directory contains the C++ emulator for Zenith. It is organized as:
 
 - `lib/zenith-emulator`: the reusable emulator library and public headers.
 - `apps/zenith-emulator`: a native executable that links against the library.
@@ -25,7 +25,7 @@ cp ./build/wasm-debug/zenith-emulator.{js,wasm,d.ts} ../zenith-web/src/wasm/
 
 The WebAssembly build emits `build/wasm-debug/zenith-emulator.js` and the paired `.wasm` binary. The generated module exports the embind `Emulator` class:
 
-```js
+```ts
 import createModule from "./zenith-emulator.js";
 
 const module = await createModule();
