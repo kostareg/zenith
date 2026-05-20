@@ -41,12 +41,20 @@ std::vector<Token> Lexer::lex() {
                     }
                     size_t end = --i;
 
-                    tts.emplace_back(TokenType::Ident, &bytes[start], end - start, name);
+                    tts.emplace_back(TokenType::Ident, &bytes[start], end - start, name, 0);
                     continue;
                 } else if (isdigit(bytes[i])) {
-                    // todo: calculate number
-                    while (i < bytes.size() && isdigit(bytes[i])) ++i;
-                    tts.emplace_back(TokenType::Number, nullptr, 0, "");
+                    // todo: hex, floats...
+                    std::string val;
+                    val.push_back(bytes[i]);
+                    size_t start = i;
+                    ++i;
+                    while (i < bytes.size() && isdigit(bytes[i])) {
+                        val.push_back(bytes[i]);
+                        ++i;
+                    }
+                    size_t end = --i;
+                    tts.emplace_back(TokenType::Number, &bytes[start], end - start, "", std::stod(val));
                     continue;
                 }
                 std::cerr << bytes[i];

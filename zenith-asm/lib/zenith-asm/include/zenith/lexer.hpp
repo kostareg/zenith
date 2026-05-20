@@ -22,6 +22,7 @@ struct Token {
     size_t len;
 
     std::string ident;
+    int num;
 
     void display() {
         switch (tt) {
@@ -31,7 +32,7 @@ struct Token {
             case TokenType::NewLine: std::cout << "newline" << std::endl; break;
             case TokenType::Keyword: std::cout << "keyword" << std::endl; break;
             case TokenType::Ident: std::cout << "ident " << ident << std::endl; break;
-            case TokenType::Number: std::cout << "number" << std::endl;
+            case TokenType::Number: std::cout << "number " << num << std::endl;
         }
     }
 };
@@ -51,7 +52,8 @@ class Lexer {
             tt,
             &bytes[i],
             1,
-            ""
+            "",
+            0
         };
     }
 };
