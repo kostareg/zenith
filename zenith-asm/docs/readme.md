@@ -33,3 +33,19 @@ const assembler = new module.Assembler();
 
 console.log(assembler.version());
 ```
+
+## Syntax
+
+```
+# lines that start with # are comments
+# start with .main
+.main
+  add r0, r0, r1
+# define a label before a section to reference it later
+  mylabel: add r1, r1, r1
+  j mylabel # desugars to jal ...
+
+# define exact data in bss
+.bss
+  label: .byte 100
+```
