@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "zenith/assembler.hpp"
+#include "zenith/compiler.hpp"
 #include "zenith/lexer.hpp"
 #include "zenith/parser.hpp"
 
@@ -38,6 +39,17 @@ int main() {
     auto parsed = parser.parse();
 
     std::cout << parsed << std::endl;
+  
+    std::cout << "------ compiler ------" << std::endl;
+
+    Compiler compiler(parsed);
+    auto compiled = compiler.compile();
+
+    std::cout << std::hex;
+    for (auto& x : compiled) {
+      std::cout << "0x" << x << std::endl;
+    }
+    std::cout << std::dec;
 
     return 0;
 }
