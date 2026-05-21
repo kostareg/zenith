@@ -1,14 +1,15 @@
 import CodeMirror from "@uiw/react-codemirror";
-import { EditorView, Decoration } from "@codemirror/view";
-import { Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
+import { Decoration, EditorView } from "@codemirror/view";
+import { Hammer, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useZenithAssembler } from "@/components/wasm/zenith-asm-provider";
+import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
 
 const REGISTER_COUNT = 32;
-const PROGRAM_SCALE = 1_000_000_000_000;
-const INSTRUCTIONS_PER_FRAME = 100;
+const RUN_FRAME_BUDGET_MS = 8;
 
 const REGISTER_NAMES = [
     "zero",
@@ -45,27 +46,53 @@ const REGISTER_NAMES = [
     "k4",
 ];
 
-const DEFAULT_PROGRAM = `0x4E200184
-0x4E203185
-0x4E203185
-0x00063205
-0x00083285
-0x00040304
-0x00026404
-0x00046484
-0x00106502
-0x0012A502
-0x00145583
-0x00164200
-0x00046304
-0x00026404
-0x00046484
-0x00106502
-0x0012A502
-0x00145583
-0x00164201
-0x00046304
-0xFFFC801A`;
+const DEFAULT_ASSEMBLY = `.main
+  # a0 = previous fibonacci number
+  # a1 = current fibonacci number
+  # a4 = latest fibonacci number
+  # a2/a3 = inner loop counter and limit
+  # a5/a6 = outer loop counter and limit
+  addi a0, zero, 0
+  addi a1, zero, 1
+  addi a3, zero, 16383
+  addi a6, zero, 16383
+  addi a5, zero, 0
+
+outer: addi a2, zero, 0
+inner: add a4, a0, a1
+  add a0, a1, zero
+  add a1, a4, zero
+  addi a2, a2, 1
+  blt a2, a3, inner
+  addi a5, a5, 1
+  blt a5, a6, outer
+`;
+
+const ZENITH_C_PLACEHOLDER = `// Zenith C is not implemented yet.
+// Use the Zenith Assembly or Machine Code tabs for now.`;
+
+type EditorTab = "zenith-c" | "assembly" | "machine-code";
+
+const EDITOR_TABS: Array<{ id: EditorTab; label: string }> = [
+    { id: "zenith-c", label: "Zenith C" },
+    { id: "assembly", label: "Zenith Assembly" },
+    { id: "machine-code", label: "Machine Code" },
+];
+
+const EDITOR_TAB_META = {
+    "zenith-c": {
+        title: "Zenith C",
+        description: "The C frontend is not implemented yet.",
+    },
+    assembly: {
+        title: "Zenith Assembly",
+        description: "Compile assembly into the loaded machine-code program.",
+    },
+    "machine-code": {
+        title: "Machine code",
+        description: "Enter one raw 32-bit hex instruction per line.",
+    },
+} satisfies Record<EditorTab, { title: string; description: string }>;
 
 type ParsedInstruction = {
     lineNumber: number;
@@ -77,6 +104,10 @@ type ParseResult = {
     instructions: Array<ParsedInstruction>;
     errors: Array<string>;
 };
+
+function createZeroRegisters() {
+    return Array.from({ length: REGISTER_COUNT }, () => 0n);
+}
 
 function parseProgram(source: string): ParseResult {
     const instructions: Array<ParsedInstruction> = [];
@@ -106,16 +137,6 @@ function parseProgram(source: string): ParseResult {
 
 function formatHex(value: bigint) {
     return `0x${BigInt.asUintN(64, value).toString(16).toUpperCase().padStart(16, "0")}`;
-}
-
-function formatFixedPoint(value: bigint, scale: bigint) {
-    const sign = value < 0n ? "-" : "";
-    const magnitude = value < 0n ? -value : value;
-    const whole = magnitude / scale;
-    const fraction = magnitude % scale;
-    const fractionWidth = scale.toString().length - 1;
-
-    return `${sign}${whole}.${fraction.toString().padStart(fractionWidth, "0")}`;
 }
 
 function decodeField1(instruction: number) {
@@ -167,26 +188,35 @@ function resolveNextInstructionIndex(instruction: number, currentIndex: number, 
     return nextPc % 4 === 0 ? nextPc / 4 : -1;
 }
 
+function unknownErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+}
+
 export function App() {
+    const assembler = useZenithAssembler();
     const emulator = useZenithEmulator();
-    const [source, setSource] = useState(DEFAULT_PROGRAM);
-    const [registers, setRegisters] = useState<Array<bigint>>(Array.from({ length: REGISTER_COUNT }, () => 0n));
+    const [activeTab, setActiveTab] = useState<EditorTab>("assembly");
+    const [assemblySource, setAssemblySource] = useState(DEFAULT_ASSEMBLY);
+    const [machineCode, setMachineCode] = useState("");
+    const [assemblyError, setAssemblyError] = useState<string | null>(null);
+    const [assemblyIsLoaded, setAssemblyIsLoaded] = useState(false);
+    const [registers, setRegisters] = useState<Array<bigint>>(createZeroRegisters);
     const [instructionIndex, setInstructionIndex] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
-    const [lastMessage, setLastMessage] = useState("Loaded fixed-point Nilakantha pi convergence program.");
+    const [lastMessage, setLastMessage] = useState("");
 
-    const parseResult = useMemo(() => parseProgram(source), [source]);
+    const parseResult = useMemo(() => parseProgram(machineCode), [machineCode]);
     const activeInstruction = parseResult.instructions[instructionIndex] ?? null;
     const activeLine = activeInstruction?.lineNumber ?? null;
-    const piEstimateRaw = registers[4] ?? 0n;
-    const piEstimate = Number(piEstimateRaw) / PROGRAM_SCALE;
-    const piEstimateText = formatFixedPoint(piEstimateRaw, BigInt(PROGRAM_SCALE));
-    const piDelta = Math.abs(Math.PI - piEstimate);
     const canStep =
         emulator !== null && parseResult.errors.length === 0 && instructionIndex < parseResult.instructions.length;
     const canRun = canStep || isRunning;
+    const activeTabMeta = EDITOR_TAB_META[activeTab];
+    const activeTabCanUseLoadedProgram = activeTab === "machine-code" || assemblyIsLoaded;
+    const canUseStepControl = activeTabCanUseLoadedProgram && canStep && !isRunning;
+    const canUseRunControl = isRunning || (activeTabCanUseLoadedProgram && canRun);
 
-    const editorExtensions = useMemo(
+    const baseEditorExtensions = useMemo(
         () => [
             EditorView.lineWrapping,
             EditorView.theme({
@@ -222,6 +252,13 @@ export function App() {
                     backgroundColor: "color-mix(in oklch, var(--muted) 55%, transparent)",
                 },
             }),
+        ],
+        []
+    );
+
+    const machineCodeEditorExtensions = useMemo(
+        () => [
+            ...baseEditorExtensions,
             EditorView.decorations.of((view) => {
                 if (activeLine === null || activeLine > view.state.doc.lines) {
                     return Decoration.set([]);
@@ -231,7 +268,12 @@ export function App() {
                 return Decoration.set([Decoration.line({ class: "cm-executing-line" }).range(line.from)]);
             }),
         ],
-        [activeLine]
+        [activeLine, baseEditorExtensions]
+    );
+
+    const readOnlyEditorExtensions = useMemo(
+        () => [...baseEditorExtensions, EditorView.editable.of(false)],
+        [baseEditorExtensions]
     );
 
     useEffect(() => {
@@ -242,11 +284,12 @@ export function App() {
         let frame = 0;
 
         const executeFrame = () => {
+            const frameDeadline = performance.now() + RUN_FRAME_BUDGET_MS;
             let nextInstructionIndex = instructionIndex;
             let nextRegisters = registers;
             let executed = 0;
 
-            while (executed < INSTRUCTIONS_PER_FRAME) {
+            while (performance.now() < frameDeadline || executed === 0) {
                 const instruction = parseResult.instructions[nextInstructionIndex];
                 if (!instruction) {
                     setIsRunning(false);
@@ -270,7 +313,7 @@ export function App() {
 
             if (executed > 0) {
                 setLastMessage(
-                    `Running continuously; executed ${executed} more instruction${executed === 1 ? "" : "s"}.`
+                    `Running continuously; executed ${executed} instruction${executed === 1 ? "" : "s"} this frame.`
                 );
             }
         };
@@ -283,9 +326,9 @@ export function App() {
     function resetProgram() {
         setIsRunning(false);
         emulator?.reset();
-        setRegisters(emulator?.getRegisters() ?? Array.from({ length: REGISTER_COUNT }, () => 0n));
+        setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
         setInstructionIndex(0);
-        setLastMessage("Program counter reset to the first parsed hex line.");
+        setLastMessage("Program counter reset to the first parsed machine-code line.");
     }
 
     function stepProgram() {
@@ -295,7 +338,7 @@ export function App() {
         }
 
         if (parseResult.errors.length > 0) {
-            setLastMessage("Fix the hex input before stepping.");
+            setLastMessage("Fix the machine-code input before stepping.");
             return;
         }
 
@@ -320,6 +363,11 @@ export function App() {
             return;
         }
 
+        if (!activeTabCanUseLoadedProgram) {
+            setLastMessage("Compile and load the assembly before running it.");
+            return;
+        }
+
         if (!canStep) {
             stepProgram();
             return;
@@ -327,6 +375,45 @@ export function App() {
 
         setIsRunning(true);
         setLastMessage("Running continuously.");
+    }
+
+    function compileAndLoadAssembly() {
+        if (!assembler) {
+            setLastMessage("Assembler is still loading.");
+            return;
+        }
+
+        try {
+            const compiled = assembler.assemble(assemblySource);
+            const compiledParseResult = parseProgram(compiled);
+            setAssemblyError(null);
+            setAssemblyIsLoaded(true);
+            setIsRunning(false);
+            emulator?.reset();
+            setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
+            setInstructionIndex(0);
+            setMachineCode(compiled);
+            setActiveTab("machine-code");
+            setLastMessage(
+                `Compiled and loaded ${compiledParseResult.instructions.length} machine-code instruction${
+                    compiledParseResult.instructions.length === 1 ? "" : "s"
+                }.`
+            );
+        } catch (error) {
+            const message = unknownErrorMessage(error);
+            setAssemblyError(message);
+            setAssemblyIsLoaded(false);
+            setIsRunning(false);
+            setLastMessage(`Assembly compile failed: ${message}`);
+        }
+    }
+
+    function selectTab(tab: EditorTab) {
+        if (tab === "zenith-c") {
+            setIsRunning(false);
+        }
+
+        setActiveTab(tab);
     }
 
     return (
@@ -344,8 +431,8 @@ export function App() {
                                 key={index}
                             >
                                 <span className="font-semibold text-foreground">
-                                    z{index}
-                                    <span className="ml-1 text-muted-foreground">{REGISTER_NAMES[index]}</span>
+                                    {REGISTER_NAMES[index]}
+                                    <span className="ml-1 text-muted-foreground">z{index} </span>
                                 </span>
                                 <span className="truncate text-right text-muted-foreground" title={formatHex(value)}>
                                     {formatHex(value)}
@@ -357,47 +444,72 @@ export function App() {
             </aside>
 
             <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_15rem]">
-                <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-                    <div className="flex items-center justify-between border-b px-4 py-2">
-                        <div>
-                            <h2 className="text-sm font-semibold">Assembly editor</h2>
-                            <p className="text-xs text-muted-foreground">
-                                Enter one raw 32-bit hex instruction per line.
-                            </p>
+                <Tabs
+                    className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0"
+                    onValueChange={(value) => selectTab(value as EditorTab)}
+                    value={activeTab}
+                >
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
+                        <div className="min-w-0">
+                            <TabsList className="mb-2">
+                                {EDITOR_TABS.map((tab) => (
+                                    <TabsTrigger
+                                        key={tab.id}
+                                        value={tab.id}
+                                    >
+                                        {tab.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                            <h2 className="text-sm font-semibold">{activeTabMeta.title}</h2>
+                            <p className="text-xs text-muted-foreground">{activeTabMeta.description}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                aria-label="Reset program"
-                                disabled={!emulator}
-                                onClick={resetProgram}
-                                size="icon"
-                                title="Reset program"
-                                variant="outline"
-                            >
-                                <RotateCcw />
-                            </Button>
-                            <Button
-                                aria-label="Step instruction"
-                                disabled={!canStep || isRunning}
-                                onClick={stepProgram}
-                                size="icon"
-                                title="Step instruction"
-                                variant="secondary"
-                            >
-                                <StepForward />
-                            </Button>
-                            <Button
-                                aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
-                                disabled={!canRun}
-                                onClick={toggleRunProgram}
-                                size="icon"
-                                title={isRunning ? "Pause continuous execution" : "Run continuously"}
-                            >
-                                {isRunning ? <Pause /> : <SkipForward />}
-                            </Button>
-                        </div>
+                        {activeTab !== "zenith-c" ? (
+                            <div className="flex items-center gap-2">
+                                {activeTab === "assembly" ? (
+                                    <Button
+                                        disabled={!assembler}
+                                        onClick={compileAndLoadAssembly}
+                                        title="Compile and load assembly"
+                                        variant="outline"
+                                    >
+                                        <Hammer />
+                                        Compile & Load
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    aria-label="Reset program"
+                                    disabled={!emulator || !activeTabCanUseLoadedProgram}
+                                    onClick={resetProgram}
+                                    size="icon"
+                                    title="Reset program"
+                                    variant="outline"
+                                >
+                                    <RotateCcw />
+                                </Button>
+                                <Button
+                                    aria-label="Step instruction"
+                                    disabled={!canUseStepControl}
+                                    onClick={stepProgram}
+                                    size="icon"
+                                    title="Step instruction"
+                                    variant="secondary"
+                                >
+                                    <StepForward />
+                                </Button>
+                                <Button
+                                    aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
+                                    disabled={!canUseRunControl}
+                                    onClick={toggleRunProgram}
+                                    size="icon"
+                                    title={isRunning ? "Pause continuous execution" : "Run continuously"}
+                                >
+                                    {isRunning ? <Pause /> : <SkipForward />}
+                                </Button>
+                            </div>
+                        ) : null}
                     </div>
-                    <div className="min-h-0 overflow-hidden">
+                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="zenith-c">
                         <CodeMirror
                             basicSetup={{
                                 autocompletion: false,
@@ -405,30 +517,69 @@ export function App() {
                                 foldGutter: false,
                                 highlightSelectionMatches: false,
                             }}
-                            extensions={editorExtensions}
+                            extensions={readOnlyEditorExtensions}
+                            height="100%"
+                            value={ZENITH_C_PLACEHOLDER}
+                        />
+                    </TabsContent>
+                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="assembly">
+                        <CodeMirror
+                            basicSetup={{
+                                autocompletion: false,
+                                bracketMatching: false,
+                                foldGutter: false,
+                                highlightSelectionMatches: false,
+                            }}
+                            extensions={baseEditorExtensions}
+                            height="100%"
+                            onChange={(value) => {
+                                setAssemblySource(value);
+                                setAssemblyError(null);
+                                setAssemblyIsLoaded(false);
+                                setIsRunning(false);
+                                setLastMessage("Assembly changed. Compile and load before running those changes.");
+                            }}
+                            value={assemblySource}
+                        />
+                    </TabsContent>
+                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="machine-code">
+                        <CodeMirror
+                            basicSetup={{
+                                autocompletion: false,
+                                bracketMatching: false,
+                                foldGutter: false,
+                                highlightSelectionMatches: false,
+                            }}
+                            extensions={machineCodeEditorExtensions}
                             height="100%"
                             onChange={(value) => {
                                 setIsRunning(false);
-                                setSource(value);
+                                setMachineCode(value);
+                                setAssemblyIsLoaded(false);
                                 setInstructionIndex(0);
-                                setLastMessage("Source changed. Reset or step from the first parsed line.");
+                                setLastMessage("Machine code changed. Reset or step from the first parsed line.");
                             }}
-                            value={source}
+                            value={machineCode}
                         />
-                    </div>
-                </div>
+                    </TabsContent>
+                </Tabs>
 
                 <footer className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-t bg-muted/20">
                     <div className="flex items-center justify-between border-b px-4 py-2">
-                        <h2 className="text-sm font-semibold">Compiler output</h2>
+                        <h2 className="text-sm font-semibold">Output</h2>
                         <span className="font-mono text-xs text-muted-foreground">
                             {parseResult.instructions.length} instruction
-                            {parseResult.instructions.length === 1 ? "" : "s"}
+                            {parseResult.instructions.length === 1 ? "" : "s"} loaded
                         </span>
                     </div>
                     <div className="min-h-0 overflow-auto p-4 font-mono text-xs leading-6">
                         {!emulator ? <p>Loading emulator...</p> : null}
-                        {parseResult.errors.length > 0 ? (
+                        {activeTab === "assembly" && !assembler ? <p>Loading assembler...</p> : null}
+                        {assemblyError ? (
+                            <div className="text-destructive">
+                                <p>{assemblyError}</p>
+                            </div>
+                        ) : parseResult.errors.length > 0 ? (
                             <div className="text-destructive">
                                 {parseResult.errors.map((parseError) => (
                                     <p key={parseError}>{parseError}</p>
@@ -443,10 +594,9 @@ export function App() {
                                         ? `line ${activeInstruction.lineNumber} (${activeInstruction.text})`
                                         : "outside parsed program"}
                                 </p>
-                                <p>
-                                    pi estimate: {piEstimateText} scaled in z4, delta {piDelta.toFixed(6)}
-                                </p>
-                                <p>z3 scale=1e12, z4 pi estimate, z5 numerator, z6 current n</p>
+                                {activeTab === "assembly" ? (
+                                    <p>{assemblyIsLoaded ? "assembly output is loaded" : "assembly is not loaded"}</p>
+                                ) : null}
                             </>
                         )}
                     </div>

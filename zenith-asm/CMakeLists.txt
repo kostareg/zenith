@@ -36,6 +36,9 @@ if(ZENITH_ASM_BUILD_WASM)
 
   add_executable(zenith-asm-wasm
     lib/zenith-asm/src/zenith/assembler.cpp
+    lib/zenith-asm/src/zenith/compiler.cpp
+    lib/zenith-asm/src/zenith/lexer.cpp
+    lib/zenith-asm/src/zenith/parser.cpp
   )
 
   target_link_libraries(zenith-asm-wasm PRIVATE zenith-asm::compile-options)
@@ -54,6 +57,7 @@ if(ZENITH_ASM_BUILD_WASM)
     "SHELL:-s MODULARIZE=1"
     "SHELL:-s EXPORT_ES6=1"
     "SHELL:-s ENVIRONMENT=web,worker,node"
+    "SHELL:-s NO_DISABLE_EXCEPTION_CATCHING=1"
     "SHELL:-lembind"
     "SHELL:--emit-tsd zenith-asm.d.ts"
   )

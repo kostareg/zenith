@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 namespace zenith::assembler {
@@ -12,6 +13,7 @@ class Assembler {
     Assembler() = default;
 
     [[nodiscard]] static std::string_view version() noexcept;
+    [[nodiscard]] std::string assemble(std::string source) const;
 };
 
-} // namespace zenith::emulator
+} // namespace zenith::assembler
