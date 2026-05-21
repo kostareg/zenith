@@ -1,5 +1,7 @@
 import CodeMirror from "@uiw/react-codemirror";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { Decoration, EditorView } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 import { Hammer, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -45,6 +47,148 @@ const REGISTER_NAMES = [
     "k3",
     "k4",
 ];
+
+const ASSEMBLY_INSTRUCTIONS = new Set([
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "addi",
+    "muli",
+    "divi",
+    "and",
+    "or",
+    "xor",
+    "l8",
+    "l16",
+    "l32",
+    "l64",
+    "s8",
+    "s16",
+    "s32",
+    "s64",
+]);
+
+const ASSEMBLY_CONTROL_INSTRUCTIONS = new Set(["beq", "bne", "bge", "ble", "bgt", "blt", "jal", "jalr", "j"]);
+
+const ASSEMBLY_REGISTERS = new Set([
+    ...REGISTER_NAMES,
+    ...Array.from({ length: REGISTER_COUNT }, (_, index) => `r${index}`),
+    ...Array.from({ length: REGISTER_COUNT }, (_, index) => `z${index}`),
+]);
+
+const C_KEYWORDS = new Set([
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "float",
+    "for",
+    "if",
+    "int",
+    "long",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "unsigned",
+    "void",
+    "while",
+]);
+
+const zenithHighlightStyle = HighlightStyle.define([
+    { tag: [tags.comment, tags.lineComment, tags.blockComment], color: "var(--muted-foreground)", fontStyle: "italic" },
+    { tag: [tags.keyword, tags.controlKeyword], color: "var(--primary)", fontWeight: "600" },
+    { tag: tags.labelName, color: "oklch(0.57 0.17 86)", fontWeight: "600" },
+    { tag: tags.variableName, color: "oklch(0.52 0.15 205)" },
+    { tag: [tags.number, tags.integer], color: "oklch(0.57 0.19 36)" },
+    { tag: [tags.string, tags.character], color: "oklch(0.48 0.14 145)" },
+    { tag: [tags.operator, tags.punctuation, tags.separator], color: "var(--muted-foreground)" },
+    { tag: tags.invalid, color: "var(--destructive)" },
+]);
+
+const assemblyLanguage = StreamLanguage.define({
+    name: "zenith-assembly",
+    token(stream) {
+        if (stream.eatSpace()) return null;
+        if (stream.match(/^#.*/)) return "lineComment";
+        if (stream.match(/^-?(?:0x[0-9a-fA-F]+|\d+)/)) return "number";
+        if (stream.match(/^\.[A-Za-z_][\w]*/)) return "keyword";
+        if (stream.match(/^[A-Za-z_][\w]*/)) {
+            const token = stream.current();
+            if (stream.peek() === ":") return "labelName";
+            if (ASSEMBLY_CONTROL_INSTRUCTIONS.has(token)) return "controlKeyword";
+            if (ASSEMBLY_INSTRUCTIONS.has(token)) return "keyword";
+            if (ASSEMBLY_REGISTERS.has(token)) return "variableName";
+            return "variableName";
+        }
+
+        if (stream.match(/^[,:]/)) return "separator";
+
+        stream.next();
+        return "operator";
+    },
+});
+
+const machineCodeLanguage = StreamLanguage.define({
+    name: "zenith-machine-code",
+    token(stream) {
+        if (stream.eatSpace()) return null;
+        if (stream.match(/^(?:0x)?[0-9a-fA-F]{1,8}/)) return "number";
+        stream.match(/^\S+/);
+        return "invalid";
+    },
+});
+
+type CStreamState = {
+    inBlockComment: boolean;
+};
+
+const cLikeLanguage = StreamLanguage.define<CStreamState>({
+    name: "zenith-c",
+    startState: () => ({ inBlockComment: false }),
+    token(stream, state) {
+        if (state.inBlockComment) {
+            if (stream.skipTo("*/")) {
+                stream.pos += 2;
+                state.inBlockComment = false;
+            } else {
+                stream.skipToEnd();
+            }
+
+            return "blockComment";
+        }
+
+        if (stream.eatSpace()) return null;
+        if (stream.match(/^\/\/.*/)) return "lineComment";
+        if (stream.match(/^\/\*/)) {
+            state.inBlockComment = true;
+            return "blockComment";
+        }
+
+        if (stream.match(/^"(?:[^"\\]|\\.)*"?/)) return "string";
+        if (stream.match(/^'(?:[^'\\]|\\.)*'?/)) return "character";
+        if (stream.match(/^-?(?:0x[0-9a-fA-F]+|\d+(?:\.\d+)?)/)) return "number";
+        if (stream.match(/^[A-Za-z_][\w]*/)) {
+            return C_KEYWORDS.has(stream.current()) ? "keyword" : "variableName";
+        }
+
+        if (stream.match(/^[{}()[\],.;:]/)) return "punctuation";
+
+        stream.next();
+        return "operator";
+    },
+});
 
 const DEFAULT_ASSEMBLY = `.main
   # a0 = previous fibonacci number
@@ -219,6 +363,7 @@ export function App() {
     const baseEditorExtensions = useMemo(
         () => [
             EditorView.lineWrapping,
+            syntaxHighlighting(zenithHighlightStyle),
             EditorView.theme({
                 "&": {
                     height: "100%",
@@ -259,6 +404,7 @@ export function App() {
     const machineCodeEditorExtensions = useMemo(
         () => [
             ...baseEditorExtensions,
+            machineCodeLanguage,
             EditorView.decorations.of((view) => {
                 if (activeLine === null || activeLine > view.state.doc.lines) {
                     return Decoration.set([]);
@@ -271,8 +417,13 @@ export function App() {
         [activeLine, baseEditorExtensions]
     );
 
+    const assemblyEditorExtensions = useMemo(
+        () => [...baseEditorExtensions, assemblyLanguage],
+        [baseEditorExtensions]
+    );
+
     const readOnlyEditorExtensions = useMemo(
-        () => [...baseEditorExtensions, EditorView.editable.of(false)],
+        () => [...baseEditorExtensions, cLikeLanguage, EditorView.editable.of(false)],
         [baseEditorExtensions]
     );
 
@@ -530,7 +681,7 @@ export function App() {
                                 foldGutter: false,
                                 highlightSelectionMatches: false,
                             }}
-                            extensions={baseEditorExtensions}
+                            extensions={assemblyEditorExtensions}
                             height="100%"
                             onChange={(value) => {
                                 setAssemblySource(value);
