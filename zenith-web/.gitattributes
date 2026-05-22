@@ -1,2 +1,6 @@
 src/components/ui/** linguist-vendored
-
+src/index.css linguist-vendored
+src/lib/utils.ts linguist-vendored
+src/vite-env.d.ts linguist-generated
+vite.config.ts linguist-generated
+eslint.config.ts linguist-generated

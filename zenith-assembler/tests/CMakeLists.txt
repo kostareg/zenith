@@ -11,7 +11,7 @@ if(NOT GTest_FOUND)
   FetchContent_MakeAvailable(googletest)
 endif()
 
-add_executable(zenith-asm-tests
+add_executable(zenith-assembler-tests
   assembler_tests.cpp
   compiler_tests.cpp
   format_tests.cpp
@@ -19,11 +19,11 @@ add_executable(zenith-asm-tests
   parser_tests.cpp
 )
 
-target_link_libraries(zenith-asm-tests
+target_link_libraries(zenith-assembler-tests
   PRIVATE
-    zenith-asm::zenith-asm
+    zenith-assembler::zenith-assembler
     GTest::gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(zenith-asm-tests)
+gtest_discover_tests(zenith-assembler-tests)

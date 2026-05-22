@@ -22,8 +22,8 @@
       "binaryDir": "${sourceDir}/build/wasm-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "ZENITH_ASM_BUILD_APPS": "OFF",
-        "ZENITH_ASM_BUILD_WASM": "ON"
+        "ZENITH_ASSEMBLER_BUILD_APPS": "OFF",
+        "ZENITH_ASSEMBLER_BUILD_WASM": "ON"
       }
     }
   ],

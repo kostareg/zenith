@@ -1,5 +1,5 @@
 import * as React from "react";
-import createModule, { type Assembler } from "@/wasm/zenith-asm";
+import createModule, { type Assembler } from "@/wasm/zenith-assembler";
 
 const ZenithAssemblerContext = React.createContext<Assembler | null>(null);
 

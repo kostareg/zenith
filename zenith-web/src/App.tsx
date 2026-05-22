@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useZenithAssembler } from "@/components/wasm/zenith-asm-provider";
+import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider";
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
 
 const REGISTER_COUNT = 32;

@@ -46,7 +46,7 @@ std::string version() {
     return std::string(zenith::assembler::Assembler::version());
 }
 
-EMSCRIPTEN_BINDINGS(zenith_asm) {
+EMSCRIPTEN_BINDINGS(zenith_assembler) {
     emscripten::class_<zenith::assembler::Assembler>("Assembler")
         .constructor<>()
         .function("assemble", &zenith::assembler::Assembler::assemble)

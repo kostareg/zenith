@@ -39,8 +39,10 @@ std::vector<std::uint8_t> Format::format() const {
         throw std::runtime_error("Zelf executable name must be 8 bytes or fewer");
     }
 
-    if (code.size() > std::numeric_limits<std::uint64_t>::max() / 4) {
-        throw std::runtime_error("Zelf code section is too large");
+    if constexpr (std::numeric_limits<std::size_t>::max() > std::numeric_limits<std::uint64_t>::max() / 4) {
+        if (code.size() > std::numeric_limits<std::uint64_t>::max() / 4) {
+            throw std::runtime_error("Zelf code section is too large");
+        }
     }
 
     if (code.size() > (std::numeric_limits<std::size_t>::max() - kHeaderSize) / 4) {

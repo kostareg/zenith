@@ -1,6 +1,6 @@
+#include <fstream>
 #include <iostream>
 #include <vector>
-#include <fstream>
 
 #include "zenith/assembler.hpp"
 #include "zenith/compiler.hpp"
@@ -15,15 +15,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cout << "Zenith assembler" << std::endl
-              << "assembling " << argv[1] << std::endl;
+    std::cout << "Zenith assembler" << std::endl << "assembling " << argv[1] << std::endl;
 
     std::ifstream file(argv[1]);
-    
-    auto program = std::vector<unsigned char>(
-        std::istreambuf_iterator<char>(file),
-        std::istreambuf_iterator<char>()
-    );
+
+    auto program = std::vector<unsigned char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 
     Lexer lexer(program);
 
@@ -40,7 +36,7 @@ int main(int argc, char* argv[]) {
     auto parsed = parser.parse();
 
     std::cout << parsed << std::endl;
-  
+
     std::cout << "------ compiler ------" << std::endl;
 
     Compiler compiler(parsed);

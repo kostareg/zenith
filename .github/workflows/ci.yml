@@ -33,8 +33,8 @@ jobs:
         run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
         working-directory: zenith-emulator
 
-  build-native-asm:
-    name: Build and test native asm
+  build-native-assembler:
+    name: Build and test native assembler
     runs-on: ubuntu-latest
 
     steps:
@@ -49,11 +49,11 @@ jobs:
 
       - name: Build
         run: nix develop --command bash -lc 'cmake --preset native-debug && cmake --build --preset native-debug'
-        working-directory: zenith-asm
+        working-directory: zenith-assembler
 
       - name: Test
         run: nix develop --command bash -lc 'ctest --test-dir build/native-debug --output-on-failure'
-        working-directory: zenith-asm
+        working-directory: zenith-assembler
 
   build-wasm-emulator:
     name: Build wasm emulator
@@ -83,8 +83,8 @@ jobs:
             zenith-emulator/build/wasm-debug/zenith-emulator.d.ts
           if-no-files-found: error
 
-  build-wasm-asm:
-    name: Build wasm asm
+  build-wasm-assembler:
+    name: Build wasm assembler
     runs-on: ubuntu-latest
 
     steps:
@@ -99,16 +99,16 @@ jobs:
 
       - name: Build
         run: nix develop --command bash -lc 'emcmake cmake --preset wasm-debug && cmake --build --preset wasm-debug'
-        working-directory: zenith-asm
+        working-directory: zenith-assembler
 
-      - name: Upload wasm asm
+      - name: Upload wasm assembler
         uses: actions/upload-artifact@v4
         with:
-          name: zenith-asm-wasm
+          name: zenith-assembler-wasm
           path: |
-            zenith-asm/build/wasm-debug/zenith-asm.js
-            zenith-asm/build/wasm-debug/zenith-asm.wasm
-            zenith-asm/build/wasm-debug/zenith-asm.d.ts
+            zenith-assembler/build/wasm-debug/zenith-assembler.js
+            zenith-assembler/build/wasm-debug/zenith-assembler.wasm
+            zenith-assembler/build/wasm-debug/zenith-assembler.d.ts
           if-no-files-found: error
 
   build-web:
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-wasm-emulator
-      - build-wasm-asm
+      - build-wasm-assembler
     permissions:
       contents: read
       pages: write
@@ -137,10 +137,10 @@ jobs:
           name: zenith-emulator-wasm
           path: zenith-web/src/wasm
 
-      - name: Download wasm asm
+      - name: Download wasm assembler
         uses: actions/download-artifact@v4
         with:
-          name: zenith-asm-wasm
+          name: zenith-assembler-wasm
           path: zenith-web/src/wasm
 
       - name: Install dependencies
