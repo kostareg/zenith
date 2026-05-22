@@ -1,0 +1,28 @@
+# Vivado generated junk
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.runs/
+*.gen/
+.Xil/
+
+# Vivado logs/journals
+*.jou
+*.log
+*.str
+
+# Simulation output
+xsim.dir/
+*.wdb
+*.vcd
+
+# Bitstreams/checkpoints/reports
+*.bit
+*.bin
+*.ltx
+*.dcp
+*.rpt
+*.mcs
+*.prm
+*.mmi
