@@ -11,6 +11,11 @@ class Emulator {
   public:
     Emulator() = default;
 
+    static constexpr std::size_t kFramebufferWidth = 1920;
+    static constexpr std::size_t kFramebufferHeight = 1080;
+    static constexpr std::size_t kFramebufferBytesPerPixel = 3;
+    static constexpr std::size_t kFramebufferSize = kFramebufferWidth * kFramebufferHeight * kFramebufferBytesPerPixel;
+
     enum class Operator : std::uint8_t {
         Add = 0x00,
         Sub = 0x01,
@@ -45,6 +50,7 @@ class Emulator {
 
     [[nodiscard]] static std::string_view version() noexcept;
     [[nodiscard]] std::array<int64_t, 32> get_registers();
+    [[nodiscard]] const std::array<std::uint8_t, kFramebufferSize>& get_framebuffer() const noexcept;
 
     [[nodiscard]] static constexpr std::uint32_t decode_field_1(std::uint32_t instruction) noexcept {
         return (instruction >> 7U) & 0x1FU;
@@ -73,6 +79,11 @@ class Emulator {
   private:
     // todo: we actually have 1GiB memory
     static constexpr std::size_t kMemorySize = 64 * 1024;
+    static constexpr std::uint64_t kFramebufferControlBase = 0xFFFFFFFFFFA01400ULL;
+    static constexpr std::uint64_t kFramebufferResolutionAddress = kFramebufferControlBase;
+    static constexpr std::uint64_t kFramebufferStatusControlAddress = kFramebufferControlBase + 4;
+    static constexpr std::uint64_t kFramebufferPixelBase = 0xFFFFFFFFFFA11400ULL;
+    static constexpr std::uint32_t kFramebufferEnableBit = 1U << 1U;
 
     [[nodiscard]] static bool is_memory_access_in_bounds(
         const std::array<std::uint8_t, kMemorySize>& memory, std::uint64_t address, std::size_t width
@@ -84,10 +95,14 @@ class Emulator {
         std::array<std::uint8_t, kMemorySize>& memory, std::uint64_t address, std::size_t width, std::uint64_t value
     ) noexcept;
     [[nodiscard]] static std::uint64_t signed_divide(std::uint64_t lhs_bits, std::uint64_t rhs_bits, bool& ok) noexcept;
+    [[nodiscard]] bool read_memory(std::uint64_t address, std::size_t width, std::uint64_t& value) const noexcept;
+    [[nodiscard]] bool write_memory(std::uint64_t address, std::size_t width, std::uint64_t value) noexcept;
 
     std::uint64_t pc = 0;
     std::array<int64_t, 32> registers{};
     std::array<std::uint8_t, kMemorySize> memory{};
+    std::array<std::uint8_t, kFramebufferSize> framebuffer{};
+    bool framebuffer_enabled = false;
 };
 
 } // namespace zenith::emulator

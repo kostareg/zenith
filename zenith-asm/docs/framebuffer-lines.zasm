@@ -1,0 +1,66 @@
+# Draw three RGB lines into the framebuffer.
+#
+# Framebuffer pixel base is 0xFFFF_FFFF_FFA1_1400, which is -6220800
+# as a signed 64-bit value.
+
+.main
+  addi t0, zero, 379
+  sub t0, zero, t0
+  addi t1, zero, 128
+  mul t0, t0, t1
+  mul t0, t0, t1
+  addi t1, zero, 11264
+  sub t0, t0, t1
+
+  addi t2, zero, 255
+  addi t3, zero, 1
+  addi t6, zero, 5760
+
+  add t5, t0, zero
+  addi t4, zero, 120
+redstart:
+  add t5, t5, t6
+  sub t4, t4, t3
+  bgt t4, zero, redstart
+
+  add t7, t5, zero
+  addi t1, zero, 4
+redrows:
+  add t5, t7, zero
+  addi t4, zero, 640
+redline:
+  s8 t2, t5, 0
+  addi t5, t5, 3
+  sub t4, t4, t3
+  bgt t4, zero, redline
+  add t7, t7, t6
+  sub t1, t1, t3
+  bgt t1, zero, redrows
+
+  add t5, t0, zero
+  addi t5, t5, 720
+  addi t4, zero, 360
+greenline:
+  s8 t2, t5, 1
+  addi t5, t5, 5760
+  sub t4, t4, t3
+  bgt t4, zero, greenline
+
+  add t5, t0, zero
+  addi t4, zero, 120
+bluestart:
+  add t5, t5, t6
+  sub t4, t4, t3
+  bgt t4, zero, bluestart
+  addi t5, t5, 1440
+  addi t4, zero, 360
+bluediagonal:
+  s8 t2, t5, 2
+  s8 t2, t5, 5
+  s8 t2, t5, 8
+  addi t5, t5, 5763
+  sub t4, t4, t3
+  bgt t4, zero, bluediagonal
+
+done:
+  j done

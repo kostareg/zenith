@@ -1,9 +1,9 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
-import { Decoration, EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { Hammer, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { EditorView, Decoration } from "@codemirror/view";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,10 @@ import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
 
 const REGISTER_COUNT = 32;
 const RUN_FRAME_BUDGET_MS = 8;
+const FRAMEBUFFER_PREVIEW_WIDTH = 320;
+const FRAMEBUFFER_PREVIEW_HEIGHT = 180;
+const FRAMEBUFFER_WIDTH = 1920;
+const FRAMEBUFFER_HEIGHT = 1080;
 
 const REGISTER_NAMES = [
     "zero",
@@ -348,6 +352,8 @@ export function App() {
     const [instructionIndex, setInstructionIndex] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [lastMessage, setLastMessage] = useState("");
+    const framebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [framebufferRevision, setFramebufferRevision] = useState(0);
 
     const parseResult = useMemo(() => parseProgram(machineCode), [machineCode]);
     const activeInstruction = parseResult.instructions[instructionIndex] ?? null;
@@ -428,6 +434,53 @@ export function App() {
     );
 
     useEffect(() => {
+        const canvas = framebufferCanvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        context.imageSmoothingEnabled = false;
+        const imageData = context.createImageData(FRAMEBUFFER_PREVIEW_WIDTH, FRAMEBUFFER_PREVIEW_HEIGHT);
+
+        if (emulator) {
+            const framebuffer = emulator.getFramebuffer();
+            for (let y = 0; y < FRAMEBUFFER_PREVIEW_HEIGHT; y += 1) {
+                const sourceYStart = Math.floor((y * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
+                const sourceYEnd = Math.ceil(((y + 1) * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
+                for (let x = 0; x < FRAMEBUFFER_PREVIEW_WIDTH; x += 1) {
+                    const destinationOffset = (y * FRAMEBUFFER_PREVIEW_WIDTH + x) * 4;
+                    const sourceXStart = Math.floor((x * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
+                    const sourceXEnd = Math.ceil(((x + 1) * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
+
+                    let red = 0;
+                    let green = 0;
+                    let blue = 0;
+                    for (let sourceY = sourceYStart; sourceY < sourceYEnd; sourceY += 1) {
+                        for (let sourceX = sourceXStart; sourceX < sourceXEnd; sourceX += 1) {
+                            const sourceOffset = (sourceY * FRAMEBUFFER_WIDTH + sourceX) * 3;
+                            red = Math.max(red, framebuffer[sourceOffset] ?? 0);
+                            green = Math.max(green, framebuffer[sourceOffset + 1] ?? 0);
+                            blue = Math.max(blue, framebuffer[sourceOffset + 2] ?? 0);
+                        }
+                    }
+
+                    imageData.data[destinationOffset] = red;
+                    imageData.data[destinationOffset + 1] = green;
+                    imageData.data[destinationOffset + 2] = blue;
+                    imageData.data[destinationOffset + 3] = 255;
+                }
+            }
+        } else {
+            for (let i = 3; i < imageData.data.length; i += 4) {
+                imageData.data[i] = 255;
+            }
+        }
+
+        context.putImageData(imageData, 0, 0);
+    }, [emulator, framebufferRevision]);
+
+    useEffect(() => {
         if (!isRunning || !emulator || parseResult.errors.length > 0) {
             return;
         }
@@ -461,6 +514,7 @@ export function App() {
 
             setRegisters(nextRegisters);
             setInstructionIndex(nextInstructionIndex);
+            setFramebufferRevision((revision) => revision + 1);
 
             if (executed > 0) {
                 setLastMessage(
@@ -479,6 +533,7 @@ export function App() {
         emulator?.reset();
         setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
         setInstructionIndex(0);
+        setFramebufferRevision((revision) => revision + 1);
         setLastMessage("Program counter reset to the first parsed machine-code line.");
     }
 
@@ -504,6 +559,7 @@ export function App() {
         emulator.step(instruction.value);
         setRegisters(emulator.getRegisters());
         setInstructionIndex(nextInstructionIndex);
+        setFramebufferRevision((revision) => revision + 1);
         setLastMessage(`Executed line ${instruction.lineNumber}: ${instruction.text}`);
     }
 
@@ -544,6 +600,7 @@ export function App() {
             setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
             setInstructionIndex(0);
             setMachineCode(compiled);
+            setFramebufferRevision((revision) => revision + 1);
             setActiveTab("machine-code");
             setLastMessage(
                 `Compiled and loaded ${compiledParseResult.instructions.length} machine-code instruction${
@@ -568,7 +625,7 @@ export function App() {
     }
 
     return (
-        <main className="grid h-svh grid-cols-[18rem_minmax(0,1fr)] overflow-hidden bg-background text-foreground">
+        <main className="grid h-svh grid-cols-[18rem_minmax(0,1fr)_22rem] overflow-hidden bg-background text-foreground">
             <aside className="flex min-h-0 flex-col border-r bg-muted/30">
                 <header className="border-b px-4 py-3">
                     <h1 className="text-sm font-semibold">Zenith Web</h1>
@@ -753,6 +810,40 @@ export function App() {
                     </div>
                 </footer>
             </section>
+
+            <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-l bg-muted/20">
+                <header className="border-b px-4 py-3">
+                    <h2 className="text-sm font-semibold">Peripherals</h2>
+                    <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
+                </header>
+                <div className="min-h-0 overflow-auto p-4">
+                    <section className="rounded-lg border bg-background">
+                        <div className="flex items-center justify-between border-b px-3 py-2">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Framebuffer
+                            </h3>
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                                {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT}
+                            </span>
+                        </div>
+                        <div className="p-3">
+                            <canvas
+                                aria-label="Framebuffer preview"
+                                className="aspect-video w-full border bg-black [image-rendering:pixelated]"
+                                height={FRAMEBUFFER_PREVIEW_HEIGHT}
+                                ref={framebufferCanvasRef}
+                                width={FRAMEBUFFER_PREVIEW_WIDTH}
+                            />
+                            <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
+                                <span>base</span>
+                                <span className="truncate text-right">0xFFFF_FFFF_FFA1_1400</span>
+                                <span>format</span>
+                                <span className="text-right">RGB888</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </aside>
         </main>
     );
 }

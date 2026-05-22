@@ -54,10 +54,75 @@ std::uint64_t Emulator::signed_divide(std::uint64_t lhs_bits, std::uint64_t rhs_
     return std::bit_cast<std::uint64_t>(lhs / rhs);
 }
 
+bool Emulator::read_memory(std::uint64_t address, std::size_t width, std::uint64_t& value) const noexcept {
+    bool ok = false;
+    value = read_little_endian(memory, address, width, ok);
+    if (ok) return true;
+
+    if (address >= kFramebufferPixelBase) {
+        const auto offset = address - kFramebufferPixelBase;
+        if (width > framebuffer.size() || offset > framebuffer.size() - width) return false;
+
+        value = 0;
+        const auto start = static_cast<std::size_t>(offset);
+        for (std::size_t i = 0; i < width; ++i) {
+            value |= static_cast<std::uint64_t>(framebuffer[start + i]) << (i * 8U);
+        }
+        return true;
+    }
+
+    const auto read_framebuffer_register =
+        [address, width](std::uint64_t register_address, std::uint32_t register_value, std::uint64_t& output) noexcept {
+            if (address < register_address) return false;
+
+            const auto offset = address - register_address;
+            if (offset > 4 || width > 4 || offset > 4 - width) return false;
+
+            output = (static_cast<std::uint64_t>(register_value) >> (offset * 8U)) & ((1ULL << (width * 8U)) - 1ULL);
+            return true;
+        };
+
+    const auto resolution =
+        static_cast<std::uint32_t>(kFramebufferWidth) | (static_cast<std::uint32_t>(kFramebufferHeight) << 16U);
+    if (read_framebuffer_register(kFramebufferResolutionAddress, resolution, value)) return true;
+
+    const auto status = framebuffer_enabled ? kFramebufferEnableBit : 0U;
+    return read_framebuffer_register(kFramebufferStatusControlAddress, status, value);
+}
+
+bool Emulator::write_memory(std::uint64_t address, std::size_t width, std::uint64_t value) noexcept {
+    if (write_little_endian(memory, address, width, value)) return true;
+
+    if (address >= kFramebufferPixelBase) {
+        const auto offset = address - kFramebufferPixelBase;
+        if (width > framebuffer.size() || offset > framebuffer.size() - width) return false;
+
+        const auto start = static_cast<std::size_t>(offset);
+        for (std::size_t i = 0; i < width; ++i) {
+            framebuffer[start + i] = static_cast<std::uint8_t>((value >> (i * 8U)) & 0xFFU);
+        }
+        return true;
+    }
+
+    if (address <= kFramebufferStatusControlAddress && width <= 8) {
+        const auto last_byte = address + width - 1;
+        if (last_byte >= kFramebufferStatusControlAddress && last_byte < kFramebufferStatusControlAddress + 4) {
+            const auto register_byte_offset = kFramebufferStatusControlAddress - address;
+            const auto control_byte = static_cast<std::uint8_t>((value >> (register_byte_offset * 8U)) & 0xFFU);
+            framebuffer_enabled = (control_byte & kFramebufferEnableBit) != 0;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void Emulator::reset() {
     pc = 0;
     registers.fill(0);
     memory.fill(0);
+    framebuffer.fill(0);
+    framebuffer_enabled = false;
 }
 
 void Emulator::step(std::uint32_t instruction) {
@@ -77,7 +142,8 @@ void Emulator::step(std::uint32_t instruction) {
                                  std::uint32_t rd, std::uint64_t address, std::size_t width
                              ) noexcept {
         bool ok = false;
-        const auto value = read_little_endian(memory, address, width, ok);
+        std::uint64_t value = 0;
+        ok = read_memory(address, width, value);
         if (!ok) return;
 
         switch (width) {
@@ -204,33 +270,33 @@ void Emulator::step(std::uint32_t instruction) {
     case Operator::S8: {
         const auto rs2 = decode_field_1(instruction);
         const auto rs1 = decode_field_2(instruction);
-        static_cast<void>(write_little_endian(
-            memory, add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 1, read_register_bits(rs2)
-        ));
+        static_cast<void>(
+            write_memory(add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 1, read_register_bits(rs2))
+        );
         break;
     }
     case Operator::S16: {
         const auto rs2 = decode_field_1(instruction);
         const auto rs1 = decode_field_2(instruction);
-        static_cast<void>(write_little_endian(
-            memory, add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 2, read_register_bits(rs2)
-        ));
+        static_cast<void>(
+            write_memory(add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 2, read_register_bits(rs2))
+        );
         break;
     }
     case Operator::S32: {
         const auto rs2 = decode_field_1(instruction);
         const auto rs1 = decode_field_2(instruction);
-        static_cast<void>(write_little_endian(
-            memory, add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 4, read_register_bits(rs2)
-        ));
+        static_cast<void>(
+            write_memory(add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 4, read_register_bits(rs2))
+        );
         break;
     }
     case Operator::S64: {
         const auto rs2 = decode_field_1(instruction);
         const auto rs1 = decode_field_2(instruction);
-        static_cast<void>(write_little_endian(
-            memory, add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 8, read_register_bits(rs2)
-        ));
+        static_cast<void>(
+            write_memory(add_offset(read_register_bits(rs1), decode_imm_15(instruction)), 8, read_register_bits(rs2))
+        );
         break;
     }
     case Operator::Beq: {
@@ -264,15 +330,13 @@ void Emulator::step(std::uint32_t instruction) {
     case Operator::Bgt: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) > read_register_signed(rs2))
-            next_pc = add_offset(pc, decode_imm_15(instruction));
+        if (read_register_signed(rs1) > read_register_signed(rs2)) next_pc = add_offset(pc, decode_imm_15(instruction));
         break;
     }
     case Operator::Blt: {
         const auto rs1 = decode_field_1(instruction);
         const auto rs2 = decode_field_2(instruction);
-        if (read_register_signed(rs1) < read_register_signed(rs2))
-            next_pc = add_offset(pc, decode_imm_15(instruction));
+        if (read_register_signed(rs1) < read_register_signed(rs2)) next_pc = add_offset(pc, decode_imm_15(instruction));
         break;
     }
     case Operator::Jal: {
@@ -305,6 +369,10 @@ std::array<int64_t, 32> Emulator::get_registers() {
     return registers;
 }
 
+const std::array<std::uint8_t, Emulator::kFramebufferSize>& Emulator::get_framebuffer() const noexcept {
+    return framebuffer;
+}
+
 } // namespace zenith::emulator
 
 #ifdef __EMSCRIPTEN__
@@ -326,6 +394,11 @@ emscripten::val get_registers(zenith::emulator::Emulator& emulator) {
     return result;
 }
 
+emscripten::val get_framebuffer(zenith::emulator::Emulator& emulator) {
+    const auto& framebuffer = emulator.get_framebuffer();
+    return emscripten::val(emscripten::typed_memory_view(framebuffer.size(), framebuffer.data()));
+}
+
 std::string version() {
     return std::string(zenith::emulator::Emulator::version());
 }
@@ -336,6 +409,7 @@ EMSCRIPTEN_BINDINGS(zenith_emulator) {
         .function("reset", &zenith::emulator::Emulator::reset)
         .function("step", &zenith::emulator::Emulator::step)
         .function("getRegisters", &get_registers)
+        .function("getFramebuffer", &get_framebuffer)
         .class_function("version", &version);
 }
 
