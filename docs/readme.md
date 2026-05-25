@@ -11,6 +11,8 @@ Zenith is a 64-bit CPU and tensor accelerator. For the specification, see [docs/
 
 These are all installed in the Nix shell, accessible with `nix develop`.
 
+For hardware development, install [Vivado Standard Edition](https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html).
+
 ### References
 
 [1] J. L. Hennessy and D. A. Patterson, Computer Organization And Design The Hardware/Software Interface. Cambridge, Ma Morgan Kaufman Publishers, 2018.
