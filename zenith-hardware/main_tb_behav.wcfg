@@ -13,14 +13,14 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="101.001 ns"></ZoomEndTime>
-      <Cursor1Time time="101.000 ns"></Cursor1Time>
+      <ZoomEndTime time="114.254 ns"></ZoomEndTime>
+      <Cursor1Time time="12.590 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="276"></NameColumnWidth>
-      <ValueColumnWidth column_width="120"></ValueColumnWidth>
+      <ValueColumnWidth column_width="116"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="4" />
+   <WVObjectSize size="5" />
    <wvobject type="logic" fp_name="/main_tb/CLOCK">
       <obj_property name="ElementShortName">CLOCK</obj_property>
       <obj_property name="ObjectShortName">CLOCK</obj_property>
@@ -28,7 +28,10 @@
    <wvobject type="array" fp_name="/main_tb/dut/state">
       <obj_property name="ElementShortName">state[1:0]</obj_property>
       <obj_property name="ObjectShortName">state[1:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/main_tb/dut/instruction">
+      <obj_property name="ElementShortName">instruction</obj_property>
+      <obj_property name="ObjectShortName">instruction</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/main_tb/DIG">
       <obj_property name="ElementShortName">DIG[3:0]</obj_property>
