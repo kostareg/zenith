@@ -43,6 +43,11 @@ class Emulator {
         Blt = 0x19,
         Jal = 0x1A,
         Jalr = 0x1B,
+        BitNot = 0x1C,
+        ShiftLeftLogical = 0x1D,
+        ShiftRightLogical = 0x1E,
+        ShiftLeftArithmetic = 0x1F,
+        ShiftRightArithmetic = 0x20,
     };
 
     void reset();

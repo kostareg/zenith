@@ -243,6 +243,37 @@ void Emulator::step(std::uint32_t instruction) {
         write_register_bits(rd, read_register_bits(rs1) ^ read_register_bits(rs2));
         break;
     }
+    case Operator::BitNot: {
+        const auto rd = decode_field_1(instruction);
+        const auto rs1 = decode_field_2(instruction);
+        write_register_bits(rd, ~read_register_bits(rs1));
+        break;
+    }
+    case Operator::ShiftLeftLogical:
+    case Operator::ShiftLeftArithmetic: {
+        const auto rd = decode_field_1(instruction);
+        const auto rs1 = decode_field_2(instruction);
+        const auto rs2 = decode_field_3(instruction);
+        const auto amount = read_register_bits(rs2) & 0x3FU;
+        write_register_bits(rd, read_register_bits(rs1) << amount);
+        break;
+    }
+    case Operator::ShiftRightLogical: {
+        const auto rd = decode_field_1(instruction);
+        const auto rs1 = decode_field_2(instruction);
+        const auto rs2 = decode_field_3(instruction);
+        const auto amount = read_register_bits(rs2) & 0x3FU;
+        write_register_bits(rd, read_register_bits(rs1) >> amount);
+        break;
+    }
+    case Operator::ShiftRightArithmetic: {
+        const auto rd = decode_field_1(instruction);
+        const auto rs1 = decode_field_2(instruction);
+        const auto rs2 = decode_field_3(instruction);
+        const auto amount = read_register_bits(rs2) & 0x3FU;
+        write_register_signed(rd, read_register_signed(rs1) >> amount);
+        break;
+    }
     case Operator::L8: {
         const auto rd = decode_field_1(instruction);
         const auto rs1 = decode_field_2(instruction);

@@ -13,6 +13,10 @@ module main_tb;
         .led_out(led_out)
     );
 
+    arithmetic_logic_unit_tb #(
+        .finish_on_done(1'b0)
+    ) alu_tests();
+
     initial begin
         #500;
         $finish;

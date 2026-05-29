@@ -15,6 +15,7 @@ namespace zenith::assembler {
 
 enum class InstructionFormat {
     Register,
+    Unary,
     Immediate,
     Jump,
     JumpPseudo,
@@ -26,7 +27,7 @@ struct InstructionInfo {
     InstructionFormat format;
 };
 
-constexpr std::array<InstructionInfo, 26> kInstructions{{
+constexpr std::array<InstructionInfo, 31> kInstructions{{
     {"add", 0x00, InstructionFormat::Register},   {"sub", 0x01, InstructionFormat::Register},
     {"mul", 0x02, InstructionFormat::Register},   {"div", 0x03, InstructionFormat::Register},
     {"addi", 0x04, InstructionFormat::Immediate}, {"muli", 0x05, InstructionFormat::Immediate},
@@ -40,6 +41,9 @@ constexpr std::array<InstructionInfo, 26> kInstructions{{
     {"bge", 0x16, InstructionFormat::Immediate},  {"ble", 0x17, InstructionFormat::Immediate},
     {"bgt", 0x18, InstructionFormat::Immediate},  {"blt", 0x19, InstructionFormat::Immediate},
     {"jal", 0x1A, InstructionFormat::Jump},       {"jalr", 0x1B, InstructionFormat::Immediate},
+    {"not", 0x1C, InstructionFormat::Unary},      {"sll", 0x1D, InstructionFormat::Register},
+    {"srl", 0x1E, InstructionFormat::Register},   {"sla", 0x1F, InstructionFormat::Register},
+    {"sra", 0x20, InstructionFormat::Register},
 }};
 
 constexpr InstructionInfo kJumpPseudo{
@@ -238,6 +242,18 @@ encode_immediate(std::uint32_t opcode, std::uint32_t field1, std::uint32_t field
             register_operand(instruction.operands[0], instruction.mnemonic),
             register_operand(instruction.operands[1], instruction.mnemonic),
             register_operand(instruction.operands[2], instruction.mnemonic)
+        );
+    }
+    case InstructionFormat::Unary: {
+        if (instruction.operands.size() != 2) {
+            throw std::runtime_error("instruction '" + instruction.mnemonic + "' expects 2 register operands");
+        }
+
+        return encode_register(
+            info->opcode,
+            register_operand(instruction.operands[0], instruction.mnemonic),
+            register_operand(instruction.operands[1], instruction.mnemonic),
+            0U
         );
     }
     case InstructionFormat::Immediate: {

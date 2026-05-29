@@ -27,6 +27,11 @@ package zenith_instructions;
         INSTR_BGT  = 7'h18,
         INSTR_BLT  = 7'h19,
         INSTR_JAL  = 7'h1A,
-    INSTR_JALR = 7'h1B
+        INSTR_JALR = 7'h1B,
+        INSTR_NOT  = 7'h1C,
+        INSTR_SLL  = 7'h1D,
+        INSTR_SRL  = 7'h1E,
+        INSTR_SLA  = 7'h1F,
+        INSTR_SRA  = 7'h20
     } instruction_t;
 endpackage

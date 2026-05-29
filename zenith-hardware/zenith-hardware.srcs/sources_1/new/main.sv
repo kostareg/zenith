@@ -95,8 +95,8 @@ module main (
 
         DECODE: begin
             case (instruction[6:0])
-                INSTR_ADD, INSTR_SUB, INSTR_MUL, INSTR_DIV,
-                INSTR_AND, INSTR_OR, INSTR_XOR: begin
+                INSTR_ADD, INSTR_SUB, INSTR_MUL, INSTR_DIV, INSTR_AND, INSTR_OR,
+                INSTR_XOR, INSTR_SLL, INSTR_SRL, INSTR_SLA, INSTR_SRA: begin
                     reg_w <= instruction[11:7];
                     reg_a <= instruction[16:12];
                     reg_b <= instruction[21:17];
@@ -108,8 +108,19 @@ module main (
                         INSTR_AND: alu_op <= BIT_AND;
                         INSTR_OR:  alu_op <= BIT_OR;
                         INSTR_XOR: alu_op <= BIT_XOR;
+                        INSTR_SLL: alu_op <= SLL;
+                        INSTR_SRL: alu_op <= SRL;
+                        INSTR_SLA: alu_op <= SLA;
+                        INSTR_SRA: alu_op <= SRA;
                         default:   alu_op <= ADD;
                     endcase
+                    alu_a_select <= 1'b0;
+                    alu_b_select <= 2'b00;
+                end
+                INSTR_NOT: begin
+                    reg_w <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    alu_op <= BIT_NOT;
                     alu_a_select <= 1'b0;
                     alu_b_select <= 2'b00;
                 end
@@ -132,7 +143,8 @@ module main (
         EXECUTE: begin
             case (instruction[6:0])
                 INSTR_ADD, INSTR_SUB, INSTR_MUL, INSTR_ADDI, INSTR_MULI,
-                INSTR_DIV, INSTR_DIVI, INSTR_AND, INSTR_OR, INSTR_XOR: begin
+                INSTR_DIV, INSTR_DIVI, INSTR_AND, INSTR_OR, INSTR_XOR, INSTR_NOT,
+                INSTR_SLL, INSTR_SRL, INSTR_SLA, INSTR_SRA: begin
                     data_w <= alu_out;
                     rf_w <= 1'b1;
                 end
