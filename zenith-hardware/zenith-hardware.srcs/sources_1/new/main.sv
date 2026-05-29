@@ -95,19 +95,34 @@ module main (
 
         DECODE: begin
             case (instruction[6:0])
-                INSTR_ADD: begin
+                INSTR_ADD, INSTR_SUB, INSTR_MUL, INSTR_DIV,
+                INSTR_AND, INSTR_OR, INSTR_XOR: begin
                     reg_w <= instruction[11:7];
                     reg_a <= instruction[16:12];
                     reg_b <= instruction[21:17];
-                    alu_op <= ADD;
+                    case (instruction[6:0])
+                        INSTR_ADD: alu_op <= ADD;
+                        INSTR_SUB: alu_op <= SUB;
+                        INSTR_MUL: alu_op <= MUL;
+                        INSTR_DIV: alu_op <= DIV;
+                        INSTR_AND: alu_op <= BIT_AND;
+                        INSTR_OR:  alu_op <= BIT_OR;
+                        INSTR_XOR: alu_op <= BIT_XOR;
+                        default:   alu_op <= ADD;
+                    endcase
                     alu_a_select <= 1'b0;
                     alu_b_select <= 2'b00;
                 end
-                INSTR_ADDI: begin
+                INSTR_ADDI, INSTR_MULI, INSTR_DIVI: begin
                     reg_w <= instruction[11:7];
                     reg_a <= instruction[16:12];
                     imm15 <= instruction[31:17];
-                    alu_op <= ADD;
+                    case (instruction[6:0])
+                        INSTR_ADDI: alu_op <= ADD;
+                        INSTR_MULI: alu_op <= MUL;
+                        INSTR_DIVI: alu_op <= DIV;
+                        default:    alu_op <= ADD;
+                    endcase
                     alu_a_select <= 1'b0;
                     alu_b_select <= 2'b01;
                 end
@@ -116,7 +131,8 @@ module main (
         end
         EXECUTE: begin
             case (instruction[6:0])
-                INSTR_ADD, INSTR_ADDI: begin
+                INSTR_ADD, INSTR_SUB, INSTR_MUL, INSTR_ADDI, INSTR_MULI,
+                INSTR_DIV, INSTR_DIVI, INSTR_AND, INSTR_OR, INSTR_XOR: begin
                     data_w <= alu_out;
                     rf_w <= 1'b1;
                 end
