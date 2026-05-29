@@ -8,9 +8,9 @@ module main_tb;
     logic [7:0] LED_out;
 
     main dut (
-        .CLOCK(CLOCK),
-        .DIG(DIG),
-        .LED_out(LED_out)
+        .clock(CLOCK),
+        .digit(DIG),
+        .led_out(LED_out)
     );
 
     initial begin
