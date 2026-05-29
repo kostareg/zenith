@@ -1,18 +1,29 @@
+import keyboard_mmio_pkg::*;
+
+typedef struct packed {
+    logic [15:0] key_code;
+    logic        pressed;
+    logic        repeat_;
+} key_event_t;
+
 module keyboard (
     input logic clock,
     input logic reset,
 
     // PS/2 lines
     input logic ps2_clock,
-    input logic ps2_data
+    input logic ps2_data,
+
+    // MMIO
+    input logic s_apb_psel,
+    input logic s_apb_penable,
+    input logic s_apb_pwrite,
+    input logic [3:0] s_apb_paddr,
+    input logic [31:0] s_apb_pwdata,
+    output logic s_apb_pready,
+    output logic [31:0] s_apb_prdata,
+    output logic s_apb_pslverr
 );
-    import keyboard_mmio_pkg::*;
-
-    keyboard_mmio regs (
-        .clk(clock),
-        .rst(reset)
-    );
-
     // sync the ps2 clock
     logic [2:0] ps2_clk_sync;
     logic [2:0] ps2_data_sync;
@@ -34,8 +45,12 @@ module keyboard (
     logic [3:0] ps2_parity = 4'b0000;
     logic ps2_error = 1'b0;
 
+    logic has_new_event;
+    key_event_t new_event;
+
     // read the PS2 data, store in FIFO
     always@(posedge clock) begin
+        has_new_event <= 1'b0;
         if (ps2_falling_edge) if (ps2_on) begin
             // we've reached the parity bit, perform an odd parity check
             if (ps2_counter == 4'd8) begin
@@ -48,6 +63,11 @@ module keyboard (
                 ps2_counter <= 1'b0;
                 ps2_on <= 1'b0;
                 ps2_parity <= 4'b0000;
+
+                // encode the new event
+                has_new_event <= 1'b1;
+                // todo: actually decode this
+                new_event <= '{key_code: 16'd5, pressed: 1'b1, repeat_: 1'b0};
             end
             // otherwise shift to the left and add the current bit
             else begin
@@ -56,5 +76,63 @@ module keyboard (
                 ps2_counter <= ps2_counter + 1;
             end
         end else if (ps2_bit == 0) ps2_on <= 1'b1;
+    end
+
+    keyboard_mmio__in_t hwif_in;
+    keyboard_mmio__out_t hwif_out;
+
+    keyboard_mmio regs (
+        .clk(clock),
+        .rst(reset),
+        .s_apb_psel,
+        .s_apb_penable,
+        .s_apb_pwrite,
+        .s_apb_paddr,
+        .s_apb_pwdata,
+        .s_apb_pready,
+        .s_apb_prdata,
+        .s_apb_pslverr,
+        .hwif_in,
+        .hwif_out
+    );
+
+    key_event_t fifo [0:15];
+    logic fifo_pop, fifo_push, fifo_empty, fifo_full, overflow_set;
+    logic [4:0] fifo_count;
+    assign fifo_empty = fifo_count == 4'd0;
+    assign fifo_full = fifo_count == 4'd16;
+
+    assign hwif_in.status_control.full.next = fifo_full;
+    assign hwif_in.status_control.ready.next = ~fifo_empty;
+    assign hwif_in.fifo_count.count.next = fifo_count;
+
+    assign hwif_in.key_event.key_code.next = fifo_empty ? 16'h0 : fifo[0].key_code;
+    assign hwif_in.key_event.pressed.next = fifo_empty ? 1'b0 : fifo[0].pressed;
+
+    assign hwif_in.status_control.overflow.next = hwif_out.status_control.overflow.value | overflow_set;
+
+    // detect pops from APB
+    // todo: is there a more SystemRDL-style way to do this?
+    logic key_event_read;
+    assign key_event_read =
+        s_apb_psel && s_apb_penable && s_apb_pready &&
+        !s_apb_pwrite && (s_apb_paddr[3:2] == 2'b01); // offset 0x4
+    assign fifo_pop = key_event_read & ~fifo_empty;
+    assign fifo_push = has_new_event & hwif_out.status_control.enable.value;
+
+    always@(posedge clock) begin
+        if (reset) begin
+            fifo <= {};
+            fifo_count <= 0;
+        end else begin
+            // todo: this probably wont synthesize well
+            if (fifo_pop) fifo <= {fifo[1:15], 18'd0};
+            if (fifo_push)
+                if (fifo_full && !fifo_pop) overflow_set <= 1'b1;
+                else fifo[fifo_count] <= new_event;
+
+            if (fifo_push & ~fifo_pop) fifo_count <= fifo_count + 1;
+            else if (~fifo_push & fifo_pop) fifo_count <= fifo_count - 1;
+        end
     end
 endmodule
