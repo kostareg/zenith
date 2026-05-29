@@ -20,7 +20,25 @@ module memory_controller(
 );
     // todo: this is fake 4kiB RAM
     logic [7:0] mem [0:4095];
-    initial mem[0] = 66;
+    initial begin
+        // addi z1, z0, 5
+        mem[0] = 8'h84;
+        mem[1] = 8'h00;
+        mem[2] = 8'h0A;
+        mem[3] = 8'h00;
+
+        // addi z2, z0, 3
+        mem[4] = 8'h04;
+        mem[5] = 8'h01;
+        mem[6] = 8'h06;
+        mem[7] = 8'h00;
+
+        // add z3, z1, z2
+        mem[8]  = 8'h80;
+        mem[9]  = 8'h11;
+        mem[10] = 8'h04;
+        mem[11] = 8'h00;
+    end
 
     always@(posedge clock) begin
         if (mem_r) begin

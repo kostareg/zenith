@@ -1,11 +1,12 @@
 `timescale 1ns / 1ps
 
+import zenith_instructions::*;
+
 typedef enum logic [2:0] {
     FETCH = 3'b000,
     FETCH_WAIT = 3'b001,
     DECODE = 3'b010,
-    EXECUTE = 3'b011,
-    CYCLE = 3'b100
+    EXECUTE = 3'b011
 } state_t;
 
 /**
@@ -26,6 +27,8 @@ module main (
     logic rf_w;
     logic [4:0] reg_a, reg_b, reg_w;
     logic [63:0] data_w, data_a, data_b;
+    logic signed [14:0] imm15;
+    logic [63:0] imm15_extended;
 
     // memory controller
     logic mem_r, mem_w, mem_ready;
@@ -34,6 +37,10 @@ module main (
     // alu
     logic [63:0] alu_a, alu_b, alu_out;
     alu_op_t alu_op;
+    logic alu_b_select;
+    assign alu_a = data_a;
+    assign alu_b = alu_b_select ? imm15_extended : data_b;
+    assign led_out = alu_out; // todo: remove
 
     state_t state;
     register_file rf (
@@ -62,8 +69,11 @@ module main (
         .alu_out(alu_out)
     );
 
+    assign imm15_extended = {{49{imm15[14]}}, imm15};
+
     always@(posedge clock) case (state)
         FETCH: begin
+            rf_w <= 1'b0;
             mem_addr <= pc;
             mem_r <= 1'b1;
             state <= FETCH_WAIT;
@@ -79,9 +89,34 @@ module main (
             end
         end
 
-        DECODE:  state <= EXECUTE;
-        EXECUTE: state <= CYCLE;
-        CYCLE:   state <= FETCH;
+        DECODE: begin
+            case (instruction[6:0])
+                INSTR_ADD: begin
+                    reg_w <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    reg_b <= instruction[21:17];
+                    alu_op <= ADD;
+                    alu_b_select <= 1'b0;
+                end
+                INSTR_ADDI: begin
+                    reg_w <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    imm15 <= instruction[31:17];
+                    alu_op <= ADD;
+                    alu_b_select <= 1'b1;
+                end
+            endcase
+            state <= EXECUTE;
+        end
+        EXECUTE: begin
+            case (instruction[6:0])
+                INSTR_ADD, INSTR_ADDI: begin
+                    data_w <= alu_out;
+                    rf_w <= 1'b1;
+                end
+            endcase
+            state <= FETCH;
+        end
         default: state <= FETCH;
     endcase
 endmodule

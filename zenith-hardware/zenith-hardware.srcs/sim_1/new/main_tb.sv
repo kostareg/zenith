@@ -2,21 +2,19 @@
 
 module main_tb;
 
-    reg CLOCK = 0;
-    always #5 CLOCK = ~CLOCK;
-    logic [3:0] DIG;
-    logic [7:0] LED_out;
+    reg clock = 0;
+    always #5 clock = ~clock;
+    logic [3:0] digit;
+    logic [7:0] led_out;
 
     main dut (
-        .clock(CLOCK),
-        .digit(DIG),
-        .led_out(LED_out)
+        .clock(clock),
+        .digit(digit),
+        .led_out(led_out)
     );
 
     initial begin
-        #1;
-
-        #100;
+        #500;
         $finish;
     end
 
