@@ -11,4 +11,5 @@ Sources can be found in `rdl`, and outputs can be generated with:
 ```bash
 peakrdl regblock rdl/keyboard_mmio.rdl -o generated --cpuif apb3-flat --top keyboard_mmio
 peakrdl markdown rdl/keyboard_mmio.rdl -o docs/keyboard_mmio.md --top top
+peakrdl html rdl/keyboard_mmio.rdl -o ../zenith-web/public/rdl/keyboard/
 ```

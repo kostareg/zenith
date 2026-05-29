@@ -9,6 +9,6 @@
     flake-utils.lib.simpleFlake {
       inherit self nixpkgs;
       name = "zenith";
-      shell = ./shell.nix;
+      shell = ./nix/shell.nix;
     };
 }
