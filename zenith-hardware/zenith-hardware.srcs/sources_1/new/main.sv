@@ -6,7 +6,8 @@ typedef enum logic [2:0] {
     FETCH = 3'b000,
     FETCH_WAIT = 3'b001,
     DECODE = 3'b010,
-    EXECUTE = 3'b011
+    EXECUTE = 3'b011,
+    MEMORY_WAIT = 3'b100
 } state_t;
 
 /**
@@ -32,6 +33,7 @@ module main (
 
     // memory controller
     logic mem_r, mem_w, mem_ready;
+    logic [1:0] mem_width;
     logic [63:0] mem_addr, mem_in, mem_out;
 
     // alu
@@ -59,6 +61,7 @@ module main (
         .clock(clock),
         .mem_r(mem_r),
         .mem_w(mem_w),
+        .mem_width(mem_width),
         .mem_addr(mem_addr),
         .mem_in(mem_in),
         .mem_out(mem_out),
@@ -78,6 +81,8 @@ module main (
             rf_w <= 1'b0;
             mem_addr <= pc;
             mem_r <= 1'b1;
+            mem_w <= 1'b0;
+            mem_width <= 2'b10;
             alu_a_select <= 1'b1;
             alu_b_select <= 2'b10;
             alu_op <= ADD;
@@ -137,6 +142,22 @@ module main (
                     alu_a_select <= 1'b0;
                     alu_b_select <= 2'b01;
                 end
+                INSTR_L8, INSTR_L16, INSTR_L32, INSTR_L64: begin
+                    reg_w <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    imm15 <= instruction[31:17];
+                    alu_op <= ADD;
+                    alu_a_select <= 1'b0;
+                    alu_b_select <= 2'b01;
+                end
+                INSTR_S8, INSTR_S16, INSTR_S32, INSTR_S64: begin
+                    reg_b <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    imm15 <= instruction[31:17];
+                    alu_op <= ADD;
+                    alu_a_select <= 1'b0;
+                    alu_b_select <= 2'b01;
+                end
             endcase
             state <= EXECUTE;
         end
@@ -147,9 +168,65 @@ module main (
                 INSTR_SLL, INSTR_SRL, INSTR_SLA, INSTR_SRA: begin
                     data_w <= alu_out;
                     rf_w <= 1'b1;
+                    state <= FETCH;
+                end
+                INSTR_L8, INSTR_L16, INSTR_L32, INSTR_L64: begin
+                    mem_addr <= alu_out;
+                    mem_r <= 1'b1;
+                    mem_w <= 1'b0;
+                    case (instruction[6:0])
+                        INSTR_L8:  mem_width <= 2'b00;
+                        INSTR_L16: mem_width <= 2'b01;
+                        INSTR_L32: mem_width <= 2'b10;
+                        default:   mem_width <= 2'b11;
+                    endcase
+                    state <= MEMORY_WAIT;
+                end
+                INSTR_S8, INSTR_S16, INSTR_S32, INSTR_S64: begin
+                    mem_addr <= alu_out;
+                    mem_in <= data_b;
+                    mem_r <= 1'b0;
+                    mem_w <= 1'b1;
+                    case (instruction[6:0])
+                        INSTR_S8:  mem_width <= 2'b00;
+                        INSTR_S16: mem_width <= 2'b01;
+                        INSTR_S32: mem_width <= 2'b10;
+                        default:   mem_width <= 2'b11;
+                    endcase
+                    state <= MEMORY_WAIT;
+                end
+                default: begin
+                    state <= FETCH;
                 end
             endcase
-            state <= FETCH;
+        end
+        MEMORY_WAIT: begin
+            mem_r <= 1'b0;
+            mem_w <= 1'b0;
+            if (mem_ready) begin
+                case (instruction[6:0])
+                    INSTR_L8: begin
+                        data_w <= {{56{mem_out[7]}}, mem_out[7:0]};
+                        rf_w <= 1'b1;
+                    end
+                    INSTR_L16: begin
+                        data_w <= {{48{mem_out[15]}}, mem_out[15:0]};
+                        rf_w <= 1'b1;
+                    end
+                    INSTR_L32: begin
+                        data_w <= {{32{mem_out[31]}}, mem_out[31:0]};
+                        rf_w <= 1'b1;
+                    end
+                    INSTR_L64: begin
+                        data_w <= mem_out;
+                        rf_w <= 1'b1;
+                    end
+                    default: begin
+                        rf_w <= 1'b0;
+                    end
+                endcase
+                state <= FETCH;
+            end
         end
         default: state <= FETCH;
     endcase

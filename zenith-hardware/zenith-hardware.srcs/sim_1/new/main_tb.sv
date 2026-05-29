@@ -17,6 +17,10 @@ module main_tb;
         .finish_on_done(1'b0)
     ) alu_tests();
 
+    memory_controller_tb #(
+        .finish_on_done(1'b0)
+    ) memory_tests();
+
     initial begin
         #500;
         $finish;
