@@ -147,15 +147,15 @@ jobs:
         run: nix develop --command bash -lc 'bun install --frozen-lockfile'
         working-directory: zenith-web
 
+      - name: Generate RDL
+        working-directory: zenith-web
+        run: nix develop --command bash -lc 'peakrdl html ../zenith-hardware/rdl/keyboard_mmio.rdl -o public/rdl/keyboard_mmio/'
+
       - name: Build
         run: nix develop --command bash -lc 'bun run build'
         working-directory: zenith-web
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-
-      - name: Generate RDL
-        working-directory: zenith-web
-        run: nix develop --command bash -lc 'peakrdl html ../zenith-hardware/rdl/keyboard_mmio.rdl -o public/rdl/keyboard_mmio/'
 
       - name: Configure Pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
