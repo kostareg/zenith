@@ -22,14 +22,18 @@ module main (
     output logic [7:0] led_out
 );
     logic [63:0] pc = 0;
+    logic [63:0] instruction_pc;
     logic [31:0] instruction;
 
     // register file
     logic rf_w;
     logic [4:0] reg_a, reg_b, reg_w;
     logic [63:0] data_w, data_a, data_b;
+    logic signed [63:0] signed_data_a, signed_data_b;
     logic signed [14:0] imm15;
+    logic signed [19:0] imm20;
     logic [63:0] imm15_extended;
+    logic [63:0] imm20_extended;
 
     // memory controller
     logic mem_r, mem_w, mem_ready;
@@ -39,10 +43,11 @@ module main (
     // alu
     logic [63:0] alu_a, alu_b, alu_out;
     alu_op_t alu_op;
-    logic alu_a_select;
+    logic [1:0] alu_a_select;
     logic [1:0] alu_b_select;
-    assign alu_a = alu_a_select ? pc : data_a;
-    assign alu_b = alu_b_select[1] ? 64'd4 :
+    assign alu_a = alu_a_select[1] ? instruction_pc :
+                   alu_a_select[0] ? pc : data_a;
+    assign alu_b = alu_b_select[1] ? (alu_b_select[0] ? imm20_extended : 64'd4) :
                    alu_b_select[0] ? imm15_extended : data_b;
     assign led_out = alu_out; // todo: remove
 
@@ -74,7 +79,10 @@ module main (
         .alu_out(alu_out)
     );
 
+    assign signed_data_a = data_a;
+    assign signed_data_b = data_b;
     assign imm15_extended = {{49{imm15[14]}}, imm15};
+    assign imm20_extended = {{44{imm20[19]}}, imm20};
 
     always@(posedge clock) case (state)
         FETCH: begin
@@ -83,7 +91,7 @@ module main (
             mem_r <= 1'b1;
             mem_w <= 1'b0;
             mem_width <= 2'b10;
-            alu_a_select <= 1'b1;
+            alu_a_select <= 2'b01;
             alu_b_select <= 2'b10;
             alu_op <= ADD;
             state <= FETCH_WAIT;
@@ -91,6 +99,7 @@ module main (
 
         FETCH_WAIT: begin
             if (mem_ready) begin
+                instruction_pc <= pc;
                 instruction <= mem_out[31:0];
                 pc <= alu_out;
                 mem_r <= 1'b0;
@@ -119,14 +128,14 @@ module main (
                         INSTR_SRA: alu_op <= SRA;
                         default:   alu_op <= ADD;
                     endcase
-                    alu_a_select <= 1'b0;
+                    alu_a_select <= 2'b00;
                     alu_b_select <= 2'b00;
                 end
                 INSTR_NOT: begin
                     reg_w <= instruction[11:7];
                     reg_a <= instruction[16:12];
                     alu_op <= BIT_NOT;
-                    alu_a_select <= 1'b0;
+                    alu_a_select <= 2'b00;
                     alu_b_select <= 2'b00;
                 end
                 INSTR_ADDI, INSTR_MULI, INSTR_DIVI: begin
@@ -139,7 +148,7 @@ module main (
                         INSTR_DIVI: alu_op <= DIV;
                         default:    alu_op <= ADD;
                     endcase
-                    alu_a_select <= 1'b0;
+                    alu_a_select <= 2'b00;
                     alu_b_select <= 2'b01;
                 end
                 INSTR_L8, INSTR_L16, INSTR_L32, INSTR_L64: begin
@@ -147,7 +156,7 @@ module main (
                     reg_a <= instruction[16:12];
                     imm15 <= instruction[31:17];
                     alu_op <= ADD;
-                    alu_a_select <= 1'b0;
+                    alu_a_select <= 2'b00;
                     alu_b_select <= 2'b01;
                 end
                 INSTR_S8, INSTR_S16, INSTR_S32, INSTR_S64: begin
@@ -155,7 +164,30 @@ module main (
                     reg_a <= instruction[16:12];
                     imm15 <= instruction[31:17];
                     alu_op <= ADD;
-                    alu_a_select <= 1'b0;
+                    alu_a_select <= 2'b00;
+                    alu_b_select <= 2'b01;
+                end
+                INSTR_BEQ, INSTR_BNE, INSTR_BGE, INSTR_BLE, INSTR_BGT, INSTR_BLT: begin
+                    reg_a <= instruction[11:7];
+                    reg_b <= instruction[16:12];
+                    imm15 <= instruction[31:17];
+                    alu_op <= ADD;
+                    alu_a_select <= 2'b10;
+                    alu_b_select <= 2'b01;
+                end
+                INSTR_JAL: begin
+                    reg_w <= instruction[11:7];
+                    imm20 <= instruction[31:12];
+                    alu_op <= ADD;
+                    alu_a_select <= 2'b10;
+                    alu_b_select <= 2'b11;
+                end
+                INSTR_JALR: begin
+                    reg_w <= instruction[11:7];
+                    reg_a <= instruction[16:12];
+                    imm15 <= instruction[31:17];
+                    alu_op <= ADD;
+                    alu_a_select <= 2'b00;
                     alu_b_select <= 2'b01;
                 end
             endcase
@@ -194,6 +226,42 @@ module main (
                         default:   mem_width <= 2'b11;
                     endcase
                     state <= MEMORY_WAIT;
+                end
+                INSTR_BEQ: begin
+                    if (data_a == data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_BNE: begin
+                    if (data_a != data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_BGE: begin
+                    if (signed_data_a >= signed_data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_BLE: begin
+                    if (signed_data_a <= signed_data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_BGT: begin
+                    if (signed_data_a > signed_data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_BLT: begin
+                    if (signed_data_a < signed_data_b)
+                        pc <= alu_out;
+                    state <= FETCH;
+                end
+                INSTR_JAL, INSTR_JALR: begin
+                    data_w <= pc;
+                    rf_w <= 1'b1;
+                    pc <= alu_out;
+                    state <= FETCH;
                 end
                 default: begin
                     state <= FETCH;
