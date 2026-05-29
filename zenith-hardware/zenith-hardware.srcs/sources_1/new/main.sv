@@ -37,9 +37,11 @@ module main (
     // alu
     logic [63:0] alu_a, alu_b, alu_out;
     alu_op_t alu_op;
-    logic alu_b_select;
-    assign alu_a = data_a;
-    assign alu_b = alu_b_select ? imm15_extended : data_b;
+    logic alu_a_select;
+    logic [1:0] alu_b_select;
+    assign alu_a = alu_a_select ? pc : data_a;
+    assign alu_b = alu_b_select[1] ? 64'd4 :
+                   alu_b_select[0] ? imm15_extended : data_b;
     assign led_out = alu_out; // todo: remove
 
     state_t state;
@@ -76,14 +78,16 @@ module main (
             rf_w <= 1'b0;
             mem_addr <= pc;
             mem_r <= 1'b1;
+            alu_a_select <= 1'b1;
+            alu_b_select <= 2'b10;
+            alu_op <= ADD;
             state <= FETCH_WAIT;
         end
 
         FETCH_WAIT: begin
             if (mem_ready) begin
                 instruction <= mem_out[31:0];
-                // todo: incorporate ALU
-                pc <= pc + 4;
+                pc <= alu_out;
                 mem_r <= 1'b0;
                 state <= DECODE;
             end
@@ -96,14 +100,16 @@ module main (
                     reg_a <= instruction[16:12];
                     reg_b <= instruction[21:17];
                     alu_op <= ADD;
-                    alu_b_select <= 1'b0;
+                    alu_a_select <= 1'b0;
+                    alu_b_select <= 2'b00;
                 end
                 INSTR_ADDI: begin
                     reg_w <= instruction[11:7];
                     reg_a <= instruction[16:12];
                     imm15 <= instruction[31:17];
                     alu_op <= ADD;
-                    alu_b_select <= 1'b1;
+                    alu_a_select <= 1'b0;
+                    alu_b_select <= 2'b01;
                 end
             endcase
             state <= EXECUTE;
