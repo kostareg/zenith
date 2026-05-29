@@ -1,0 +1,86 @@
+// Zenith v0.1.0 keyboard MMIO register definition.
+//
+// Absolute MMIO range:
+//   0xFFFF_FFFF_FFA0_0000 - 0xFFFF_FFFF_FFA0_0FFF
+//
+// Register offsets below are relative to 0xFFFF_FFFF_FFA0_0000.
+// All registers are little-endian 32-bit MMIO registers.
+
+addrmap keyboard_mmio {
+    name = "Zenith Keyboard MMIO";
+    desc = "Zenith v0.1.0 keyboard controller control, status, and event registers.";
+
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    reg {
+        name = "Status/Control";
+        desc = "Reads return keyboard status. Writes update keyboard control.";
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "READY: set to 1 when KEY_EVENT can be read.";
+        } ready[0:0] = 0;
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "FULL: set to 1 when the event FIFO is full.";
+        } full[1:1] = 0;
+
+        field {
+            sw = rw;
+            hw = rw;
+            onwrite = woclr;
+            desc = "Read as OVERFLOW: set if one or more key events were dropped. Write 1 as CLR_OVER to clear OVERFLOW.";
+        } overflow[2:2] = 0;
+
+        field {
+            sw = rw;
+            hw = r;
+            desc = "Read as ENABLED and write as ENABLE. 1 enables the keyboard controller; 0 disables it.";
+        } enable[3:3] = 0;
+
+        field {
+            sw = w;
+            hw = r;
+            singlepulse = true;
+            desc = "CLR_FIFO: write 1 to discard all pending key events. Reads return zero.";
+        } clear_fifo[4:4] = 0;
+    } status_control @ 0x0000;
+
+    reg {
+        name = "Key Event";
+        desc = "Read and pop the oldest pending key event. If READY is 0, reads return zero and do not change controller state.";
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "KEY_CODE: USB HID Keyboard/Keypad usage ID.";
+        } key_code[15:0] = 0;
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "PRESSED: 1 for key press, 0 for key release.";
+        } pressed[16:16] = 0;
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "REPEAT: 1 if the event is an auto-repeat key press.";
+        } repeat[17:17] = 0;
+    } key_event @ 0x0004;
+
+    reg {
+        name = "FIFO Count";
+        desc = "Number of pending key events in the FIFO. The v0.1.0 FIFO depth is 16 events.";
+
+        field {
+            sw = r;
+            hw = w;
+            desc = "COUNT: pending key-event count, 0 through 16.";
+        } count[4:0] = 0;
+    } fifo_count @ 0x0008;
+};

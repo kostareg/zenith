@@ -26,3 +26,7 @@ xsim.dir/
 *.mcs
 *.prm
 *.mmi
+
+# SystemRDL
+generated/*
+!generated/.git-keep

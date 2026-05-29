@@ -9,6 +9,11 @@
     # Web development
     bun
     emscripten
+
+    # SystemRDL
+    python3Packages.peakrdl
+    python3Packages.peakrdl-regblock
+    python3Packages.peakrdl-markdown
   ];
 in
   pkgs.mkShell {

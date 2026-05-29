@@ -8,6 +8,7 @@ Zenith is a 64-bit CPU and tensor accelerator. For the specification, see [docs/
 * Ninja
 * Bun
 * emsdk
+* PeakRDL regblock and markdown
 
 These are all installed in the Nix shell, accessible with `nix develop`.
 
