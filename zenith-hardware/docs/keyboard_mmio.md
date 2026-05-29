@@ -1,14 +1,24 @@
 <!---
 Markdown description for SystemRDL register map.
 
-Don't override. Generated from: keyboard_mmio
-  - rdl/keyboard.rdl
+Don't override. Generated from: top
+  - rdl/keyboard_mmio.rdl
 -->
 
-## keyboard_mmio address map
+## top address map
 
 - Absolute Address: 0x0
 - Base Offset: 0x0
+- Size: 0xFFFFFFFFFFA0000C
+
+|      Offset      |   Identifier  |        Name        |
+|------------------|---------------|--------------------|
+|0xFFFFFFFFFFA00000|keyboard_mmio_a|Zenith Keyboard MMIO|
+
+## keyboard_mmio_a address map
+
+- Absolute Address: 0xFFFFFFFFFFA00000
+- Base Offset: 0xFFFFFFFFFFA00000
 - Size: 0xC
 
 <p>Zenith v0.1.0 keyboard controller control, status, and event registers.</p>
@@ -21,7 +31,7 @@ Don't override. Generated from: keyboard_mmio
 
 ### status_control register
 
-- Absolute Address: 0x0
+- Absolute Address: 0xFFFFFFFFFFA00000
 - Base Offset: 0x0
 - Size: 0x4
 
@@ -57,7 +67,7 @@ Don't override. Generated from: keyboard_mmio
 
 ### key_event register
 
-- Absolute Address: 0x4
+- Absolute Address: 0xFFFFFFFFFFA00004
 - Base Offset: 0x4
 - Size: 0x4
 
@@ -83,7 +93,7 @@ Don't override. Generated from: keyboard_mmio
 
 ### fifo_count register
 
-- Absolute Address: 0x8
+- Absolute Address: 0xFFFFFFFFFFA00008
 - Base Offset: 0x8
 - Size: 0x4
 

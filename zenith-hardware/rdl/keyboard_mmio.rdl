@@ -84,3 +84,7 @@ addrmap keyboard_mmio {
         } count[4:0] = 0;
     } fifo_count @ 0x0008;
 };
+
+addrmap top {
+    keyboard_mmio keyboard_mmio_a @ 0xFFFF_FFFF_FFA0_0000;
+};
