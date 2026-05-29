@@ -8,6 +8,13 @@ typedef enum logic [2:0] {
     CYCLE = 3'b100
 } state_t;
 
+typedef enum logic [1:0] {
+    ADD = 2'b00,
+    SUB = 2'b01,
+    MUL = 2'b10,
+    DIV = 2'b11
+} alu_op_t;
+
 /**
  * @brief top level processor
  * @param clock   clock
@@ -31,6 +38,10 @@ module main (
     logic mem_r, mem_w, mem_ready;
     logic [63:0] mem_addr, mem_in, mem_out;
 
+    // alu
+    logic [63:0] alu_a, alu_b, alu_out;
+    alu_op_t alu_op;
+
     state_t state;
     register_file rf (
         .clock(clock),
@@ -50,6 +61,12 @@ module main (
         .mem_in(mem_in),
         .mem_out(mem_out),
         .mem_ready(mem_ready)
+    );
+    arithmetic_logic_unit alu (
+        .alu_a(alu_a),
+        .alu_b(alu_b),
+        .alu_op(alu_op),
+        .alu_out(alu_out)
     );
 
     always@(posedge clock) case (state)
@@ -149,4 +166,26 @@ module memory_controller(
             mem[mem_addr+7] <= mem_in[63:56];
         end
     end
+endmodule
+
+/**
+ * @brief arithmetic logic unit
+ * @param alu_a   alu input a
+ * @param alu_b   alu input b
+ * @param alu_op  alu operation
+ * @param alu_out alu output
+ */
+module arithmetic_logic_unit(
+    input logic [63:0] alu_a,
+    input logic [63:0] alu_b,
+    input alu_op_t alu_op,
+    output logic [63:0] alu_out
+);
+    always_comb case (alu_op)
+        ADD: alu_out = alu_a + alu_b;
+        SUB: alu_out = alu_a - alu_b;
+        DIV: alu_out = alu_a / alu_b; // todo: consider optimizing this, or multicycle state machine
+        MUL: alu_out = alu_a * alu_b;
+        default: alu_out = 0;
+    endcase
 endmodule
