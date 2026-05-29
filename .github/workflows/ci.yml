@@ -155,7 +155,7 @@ jobs:
 
       - name: Generate RDL
         working-directory: zenith-web
-        run: nix develop --comand bash -lc 'peakrdl html ../zenith-hardware/rdl/keyboard_mmio.rdl -o public/rdl/keyboard_mmio/'
+        run: nix develop --command bash -lc 'peakrdl html ../zenith-hardware/rdl/keyboard_mmio.rdl -o public/rdl/keyboard_mmio/'
 
       - name: Configure Pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
