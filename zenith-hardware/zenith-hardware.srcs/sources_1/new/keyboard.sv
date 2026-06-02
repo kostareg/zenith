@@ -99,8 +99,8 @@ module keyboard (
     key_event_t fifo [0:15];
     logic fifo_pop, fifo_push, fifo_empty, fifo_full, overflow_set;
     logic [4:0] fifo_count;
-    assign fifo_empty = fifo_count == 4'd0;
-    assign fifo_full = fifo_count == 4'd16;
+    assign fifo_empty = fifo_count == 5'd0;
+    assign fifo_full = fifo_count == 5'd16;
 
     assign hwif_in.status_control.full.next = fifo_full;
     assign hwif_in.status_control.ready.next = ~fifo_empty;
@@ -108,6 +108,7 @@ module keyboard (
 
     assign hwif_in.key_event.key_code.next = fifo_empty ? 16'h0 : fifo[0].key_code;
     assign hwif_in.key_event.pressed.next = fifo_empty ? 1'b0 : fifo[0].pressed;
+    assign hwif_in.key_event.repeat_.next = fifo_empty ? 1'b0 : fifo[0].repeat_;
 
     assign hwif_in.status_control.overflow.next = hwif_out.status_control.overflow.value | overflow_set;
 
@@ -120,19 +121,36 @@ module keyboard (
     assign fifo_pop = key_event_read & ~fifo_empty;
     assign fifo_push = has_new_event & hwif_out.status_control.enable.value;
 
+    logic overflow_clear;
+    assign overflow_clear =
+        s_apb_psel && s_apb_penable && s_apb_pready &&
+        s_apb_pwrite && (s_apb_paddr[3:2] == 2'b00) && s_apb_pwdata[2];
+
     always@(posedge clock) begin
         if (reset) begin
-            fifo <= {};
+            fifo <= '{default: '0};
             fifo_count <= 0;
+            overflow_set <= 1'b0;
         end else begin
-            // todo: this probably wont synthesize well
-            if (fifo_pop) fifo <= {fifo[1:15], 18'd0};
-            if (fifo_push)
-                if (fifo_full && !fifo_pop) overflow_set <= 1'b1;
-                else fifo[fifo_count] <= new_event;
+            if (overflow_clear)
+                overflow_set <= 1'b0;
 
-            if (fifo_push & ~fifo_pop) fifo_count <= fifo_count + 1;
-            else if (~fifo_push & fifo_pop) fifo_count <= fifo_count - 1;
+            if (hwif_out.status_control.clear_fifo.value) begin
+                fifo <= '{default: '0};
+                fifo_count <= 0;
+            end else begin
+                if (fifo_pop) begin
+                    fifo[0:14] <= fifo[1:15];
+                    fifo[15] <= '0;
+                end
+                if (fifo_push)
+                    if (fifo_full && !fifo_pop) overflow_set <= 1'b1;
+                    else if (fifo_pop) fifo[fifo_count - 1] <= new_event;
+                    else fifo[fifo_count] <= new_event;
+
+                if (fifo_push & ~fifo_pop & ~fifo_full) fifo_count <= fifo_count + 1;
+                else if (~fifo_push & fifo_pop) fifo_count <= fifo_count - 1;
+            end
         end
     end
 endmodule

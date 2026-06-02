@@ -21,12 +21,16 @@ module main_tb;
         .finish_on_done(1'b0)
     ) memory_tests();
 
+    keyboard_tb #(
+        .finish_on_done(1'b0)
+    ) keyboard_tests();
+
     control_flow_tb #(
         .finish_on_done(1'b0)
     ) control_tests();
 
     initial begin
-        #3000;
+        #50000;
         $finish;
     end
 
