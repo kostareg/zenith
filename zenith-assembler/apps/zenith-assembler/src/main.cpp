@@ -1,54 +1,62 @@
+#include <cstdint>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <vector>
 
-#include "zenith/assembler.hpp"
 #include "zenith/compiler.hpp"
+#include "zenith/format.hpp"
 #include "zenith/lexer.hpp"
 #include "zenith/parser.hpp"
 
 using namespace zenith::assembler;
 
 int main(int argc, char* argv[]) {
+    constexpr const char* kOutputPath = "out.zelf";
+    constexpr const char* kDefaultProgramName = "example";
+
     if (argc != 2) {
-        std::cerr << "file not specified or too many arguments" << std::endl;
+        std::cerr << "usage: zenith-assembler-app <input.zasm>" << std::endl;
         return 1;
     }
 
-    std::cout << "Zenith assembler" << std::endl << "assembling " << argv[1] << std::endl;
+    try {
+        std::cout << "Zenith assembler" << std::endl << "assembling " << argv[1] << std::endl;
 
-    std::ifstream file(argv[1]);
+        std::ifstream file(argv[1], std::ios::binary);
+        if (!file) {
+            std::cerr << "failed to open input file: " << argv[1] << std::endl;
+            return 1;
+        }
 
-    auto program = std::vector<unsigned char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+        auto program =
+            std::vector<unsigned char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 
-    Lexer lexer(program);
+        Lexer lexer(program);
+        Parser parser(lexer.lex());
+        Compiler compiler(parser.parse());
+        const std::vector<std::uint32_t> compiled = compiler.compile();
 
-    std::cout << "------ lexer ------" << std::endl;
+        const std::vector<std::uint8_t> zelf = Format(kDefaultProgramName, compiled).format();
 
-    auto lexed = lexer.lex();
-    for (Token& t : lexed) {
-        t.display();
+        std::ofstream output(kOutputPath, std::ios::binary);
+        if (!output) {
+            std::cerr << "failed to open output file: " << kOutputPath << std::endl;
+            return 1;
+        }
+
+        output.write(reinterpret_cast<const char*>(zelf.data()), static_cast<std::streamsize>(zelf.size()));
+        if (!output) {
+            std::cerr << "failed to write output file: " << kOutputPath << std::endl;
+            return 1;
+        }
+
+        std::cout << "wrote " << kOutputPath << " (" << zelf.size() << " bytes)" << std::endl;
+    } catch (const std::exception& error) {
+        std::cerr << "assembly failed: " << error.what() << std::endl;
+        return 1;
     }
-
-    std::cout << "------ parser ------" << std::endl;
-
-    Parser parser(lexed);
-    auto parsed = parser.parse();
-
-    std::cout << parsed << std::endl;
-
-    std::cout << "------ compiler ------" << std::endl;
-
-    Compiler compiler(parsed);
-    auto compiled = compiler.compile();
-
-    std::cout << std::hex;
-    for (auto& x : compiled) {
-        std::cout << "0x" << x << std::endl;
-    }
-    std::cout << std::dec;
-
-    // todo: .data section
 
     return 0;
 }

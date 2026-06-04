@@ -50,3 +50,11 @@ console.log(assembler.version());
 .data
   label: .byte 100
 ```
+
+## Tools
+
+To analyze an outputted ZELF file (out.zelf by default), run:
+
+```bash
+hexyl out.zelf --group-size 4 --endianness little
+```
