@@ -6,7 +6,7 @@ std::string_view Compiler::version() noexcept {
     return "0.1.0";
 }
 
-} // namespace zenith::assembler
+} // namespace zenith::compiler
 
 #ifdef __EMSCRIPTEN__
 
@@ -19,7 +19,7 @@ std::string version() {
     return std::string(zenith::compiler::Compiler::version());
 }
 
-EMSCRIPTEN_BINDINGS(zenith_assembler) {
+EMSCRIPTEN_BINDINGS(zenith_compiler) {
     emscripten::class_<zenith::compiler::Compiler>("Compiler")
         .constructor<>()
         .class_function("version", &version);

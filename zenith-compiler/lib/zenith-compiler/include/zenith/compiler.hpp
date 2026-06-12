@@ -10,4 +10,4 @@ class Compiler {
     [[nodiscard]] static std::string_view version() noexcept;
 };
 
-} // namespace zenith::assembler
+} // namespace zenith::compiler
