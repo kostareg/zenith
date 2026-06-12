@@ -389,8 +389,9 @@ class Scanner {
 
     void scan_greater(std::size_t start, std::size_t start_line, std::size_t start_column) {
         if (match('>')) {
-            add_token(match('=') ? TokenType::GreaterGreaterEqual : TokenType::GreaterGreater, start, start_line,
-                start_column);
+            add_token(
+                match('=') ? TokenType::GreaterGreaterEqual : TokenType::GreaterGreater, start, start_line, start_column
+            );
             return;
         }
 
@@ -406,7 +407,8 @@ class Scanner {
         add_token(keyword_or_identifier(lexeme), start, start_line, start_column);
     }
 
-    void scan_integer_literal(std::size_t start, std::size_t start_line, std::size_t start_column, unsigned char first) {
+    void
+    scan_integer_literal(std::size_t start, std::size_t start_line, std::size_t start_column, unsigned char first) {
         std::uint64_t value = 0;
 
         if (first == '0' && (peek() == 'x' || peek() == 'X')) {
@@ -628,10 +630,24 @@ class Scanner {
         return value * static_cast<std::uint64_t>(base) + static_cast<std::uint64_t>(digit);
     }
 
-    void add_token(TokenType type, std::size_t start, std::size_t start_line, std::size_t start_column,
-        std::uint64_t integer_value = 0, std::string text = "") {
-        tokens.push_back(Token{type, std::string(source.substr(start, current - start)), start_line, start_column,
-            integer_value, std::move(text)});
+    void add_token(
+        TokenType type,
+        std::size_t start,
+        std::size_t start_line,
+        std::size_t start_column,
+        std::uint64_t integer_value = 0,
+        std::string text = ""
+    ) {
+        tokens.push_back(
+            Token{
+                type,
+                std::string(source.substr(start, current - start)),
+                start_line,
+                start_column,
+                integer_value,
+                std::move(text)
+            }
+        );
     }
 
     [[noreturn]] void fail(std::string message) const {
@@ -639,8 +655,9 @@ class Scanner {
     }
 
     [[noreturn]] void fail_at(std::size_t error_line, std::size_t error_column, std::string message) const {
-        throw std::runtime_error("line " + std::to_string(error_line) + ", column " + std::to_string(error_column)
-            + ": " + message);
+        throw std::runtime_error(
+            "line " + std::to_string(error_line) + ", column " + std::to_string(error_column) + ": " + message
+        );
     }
 };
 

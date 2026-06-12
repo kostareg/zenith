@@ -30,42 +30,22 @@ TEST(Lexer, TokenizesKeywordsAndBuiltinTypes) {
     const std::vector<Token> tokens = lex_source(
         "if else while for break continue return switch case default "
         "struct enum static true false bool void char short int long signed unsigned "
-        "int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t uint64_t");
+        "int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t uint64_t"
+    );
 
-    EXPECT_EQ(token_types(tokens), (std::vector<TokenType>{
-                                      TokenType::KeywordIf,
-                                      TokenType::KeywordElse,
-                                      TokenType::KeywordWhile,
-                                      TokenType::KeywordFor,
-                                      TokenType::KeywordBreak,
-                                      TokenType::KeywordContinue,
-                                      TokenType::KeywordReturn,
-                                      TokenType::KeywordSwitch,
-                                      TokenType::KeywordCase,
-                                      TokenType::KeywordDefault,
-                                      TokenType::KeywordStruct,
-                                      TokenType::KeywordEnum,
-                                      TokenType::KeywordStatic,
-                                      TokenType::KeywordTrue,
-                                      TokenType::KeywordFalse,
-                                      TokenType::KeywordBool,
-                                      TokenType::KeywordVoid,
-                                      TokenType::KeywordChar,
-                                      TokenType::KeywordShort,
-                                      TokenType::KeywordInt,
-                                      TokenType::KeywordLong,
-                                      TokenType::KeywordSigned,
-                                      TokenType::KeywordUnsigned,
-                                      TokenType::KeywordInt8,
-                                      TokenType::KeywordInt16,
-                                      TokenType::KeywordInt32,
-                                      TokenType::KeywordInt64,
-                                      TokenType::KeywordUInt8,
-                                      TokenType::KeywordUInt16,
-                                      TokenType::KeywordUInt32,
-                                      TokenType::KeywordUInt64,
-                                      TokenType::EndOfFile,
-                                  }));
+    EXPECT_EQ(
+        token_types(tokens),
+        (std::vector<TokenType>{
+            TokenType::KeywordIf,     TokenType::KeywordElse,     TokenType::KeywordWhile,    TokenType::KeywordFor,
+            TokenType::KeywordBreak,  TokenType::KeywordContinue, TokenType::KeywordReturn,   TokenType::KeywordSwitch,
+            TokenType::KeywordCase,   TokenType::KeywordDefault,  TokenType::KeywordStruct,   TokenType::KeywordEnum,
+            TokenType::KeywordStatic, TokenType::KeywordTrue,     TokenType::KeywordFalse,    TokenType::KeywordBool,
+            TokenType::KeywordVoid,   TokenType::KeywordChar,     TokenType::KeywordShort,    TokenType::KeywordInt,
+            TokenType::KeywordLong,   TokenType::KeywordSigned,   TokenType::KeywordUnsigned, TokenType::KeywordInt8,
+            TokenType::KeywordInt16,  TokenType::KeywordInt32,    TokenType::KeywordInt64,    TokenType::KeywordUInt8,
+            TokenType::KeywordUInt16, TokenType::KeywordUInt32,   TokenType::KeywordUInt64,   TokenType::EndOfFile,
+        })
+    );
 }
 
 TEST(Lexer, LeavesUnsupportedCWordsAsIdentifiers) {
@@ -138,24 +118,27 @@ TEST(Lexer, TokenizesOperatorsAndPunctuation) {
 TEST(Lexer, TokenizesCStyleExpressionWithTernary) {
     const std::vector<Token> tokens = lex_source("result = ptr->field ? values[0] + 1 : 0;");
 
-    EXPECT_EQ(token_types(tokens), (std::vector<TokenType>{
-                                      TokenType::Identifier,
-                                      TokenType::Equal,
-                                      TokenType::Identifier,
-                                      TokenType::Arrow,
-                                      TokenType::Identifier,
-                                      TokenType::Question,
-                                      TokenType::Identifier,
-                                      TokenType::LeftBracket,
-                                      TokenType::IntegerLiteral,
-                                      TokenType::RightBracket,
-                                      TokenType::Plus,
-                                      TokenType::IntegerLiteral,
-                                      TokenType::Colon,
-                                      TokenType::IntegerLiteral,
-                                      TokenType::Semicolon,
-                                      TokenType::EndOfFile,
-                                  }));
+    EXPECT_EQ(
+        token_types(tokens),
+        (std::vector<TokenType>{
+            TokenType::Identifier,
+            TokenType::Equal,
+            TokenType::Identifier,
+            TokenType::Arrow,
+            TokenType::Identifier,
+            TokenType::Question,
+            TokenType::Identifier,
+            TokenType::LeftBracket,
+            TokenType::IntegerLiteral,
+            TokenType::RightBracket,
+            TokenType::Plus,
+            TokenType::IntegerLiteral,
+            TokenType::Colon,
+            TokenType::IntegerLiteral,
+            TokenType::Semicolon,
+            TokenType::EndOfFile,
+        })
+    );
 }
 
 TEST(Lexer, TokenizesIntegerCharacterAndStringLiterals) {
