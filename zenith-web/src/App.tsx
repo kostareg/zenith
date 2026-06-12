@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider";
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
+import { useZenithCompiler } from "./components/wasm/zenith-compiler-provider";
 
 const REGISTER_COUNT = 32;
 const RUN_FRAME_BUDGET_MS = 8;
@@ -348,6 +349,8 @@ function unknownErrorMessage(error: unknown) {
 export function App() {
     const assembler = useZenithAssembler();
     const emulator = useZenithEmulator();
+    // @ts-ignore
+    const compiler = useZenithCompiler();
     const [activeTab, setActiveTab] = useState<EditorTab>("assembly");
     const [assemblySource, setAssemblySource] = useState(DEFAULT_ASSEMBLY);
     const [machineCode, setMachineCode] = useState("");
