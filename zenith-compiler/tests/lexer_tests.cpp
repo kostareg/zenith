@@ -71,6 +71,7 @@ TEST(Lexer, TokenizesOperatorsAndPunctuation) {
         {".", TokenType::Dot},
         {":", TokenType::Colon},
         {"?", TokenType::Question},
+        {"#", TokenType::Hash},
         {"+", TokenType::Plus},
         {"-", TokenType::Minus},
         {"*", TokenType::Star},
@@ -173,7 +174,6 @@ TEST(Lexer, SkipsWhitespaceAndComments) {
 }
 
 TEST(Lexer, ReportsUnsupportedLexicalForms) {
-    EXPECT_THROW(lex_source("#define X 1"), std::runtime_error);
     EXPECT_THROW(lex_source("1.5"), std::runtime_error);
     EXPECT_THROW(lex_source("0b1010"), std::runtime_error);
 }

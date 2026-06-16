@@ -6,6 +6,7 @@ target_compile_features(zenith-compiler-compile-options INTERFACE cxx_std_20)
 add_library(zenith-compiler
   src/zenith/compiler.cpp
   src/zenith/lexer.cpp
+  src/zenith/preprocessor.cpp
 )
 
 add_library(zenith-compiler::zenith-compiler ALIAS zenith-compiler)

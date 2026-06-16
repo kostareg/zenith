@@ -293,6 +293,9 @@ class Scanner {
         case '?':
             add_token(TokenType::Question, start, start_line, start_column);
             return;
+        case '#':
+            add_token(TokenType::Hash, start, start_line, start_column);
+            return;
         case '+':
             if (match('+')) {
                 add_token(TokenType::PlusPlus, start, start_line, start_column);
@@ -698,6 +701,8 @@ std::string_view token_type_name(TokenType type) noexcept {
         return "Colon";
     case TokenType::Question:
         return "Question";
+    case TokenType::Hash:
+        return "Hash";
     case TokenType::Plus:
         return "Plus";
     case TokenType::Minus:

@@ -14,6 +14,7 @@ endif()
 add_executable(zenith-compiler-tests
   compiler_tests.cpp
   lexer_tests.cpp
+  preprocessor_tests.cpp
 )
 
 target_link_libraries(zenith-compiler-tests
