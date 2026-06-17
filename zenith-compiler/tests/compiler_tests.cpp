@@ -1,5 +1,6 @@
 #include "zenith/compiler.hpp"
 
+#include <array>
 #include <stdexcept>
 #include <string>
 
@@ -58,6 +59,33 @@ int main() {
     EXPECT_NE(assembly.find("beq"), std::string::npos);
     EXPECT_NE(assembly.find("s64"), std::string::npos);
     EXPECT_NE(assembly.find("l64"), std::string::npos);
+}
+
+TEST(Compiler, EmitsComparisonsBeforeWritingBooleanResult) {
+    Compiler compiler;
+
+    const std::string assembly = compiler.compile(R"(
+int main() {
+  int a = 5;
+  int b = 7;
+  int total = 0;
+  total = total + (a < b);
+  total = total + (a <= b);
+  total = total + (a > b);
+  total = total + (a >= b);
+  total = total + (a == b);
+  total = total + (a != b);
+  return total;
+}
+)");
+
+    for (const char* mnemonic : std::array{"blt", "ble", "bgt", "bge", "beq", "bne"}) {
+        const std::string branch = std::string("  ") + mnemonic + " t1, t0,";
+        EXPECT_NE(assembly.find(branch), std::string::npos) << mnemonic;
+
+        const std::string clobber_before_branch = std::string("  addi t0, zero, 0\n") + branch;
+        EXPECT_EQ(assembly.find(clobber_before_branch), std::string::npos) << mnemonic;
+    }
 }
 
 TEST(Compiler, RejectsGlobalVariables) {

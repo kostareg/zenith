@@ -946,8 +946,8 @@ class CodeGenerator {
         const std::string true_label = new_label();
         const std::string end_label = new_label();
 
-        emit_load_constant(target, 0);
         emitter->emit(std::string(branch) + " " + lhs + ", " + rhs + ", " + true_label);
+        emit_load_constant(target, 0);
         emitter->emit("j " + end_label);
         emitter->label(true_label);
         emit_load_constant(target, 1);
