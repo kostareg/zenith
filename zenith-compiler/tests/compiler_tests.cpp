@@ -118,6 +118,66 @@ int main() {
     EXPECT_NE(assembly.find("s64"), std::string::npos);
 }
 
+TEST(Compiler, PacksByteSizedGlobalArrays) {
+    Compiler compiler;
+
+    const std::string assembly = compiler.compile(R"(
+uint8_t bytes[] = {0x00, 0x7F, 0x80, 0xFF};
+
+int main() {
+  return bytes[3];
+}
+)");
+
+    EXPECT_NE(assembly.find("  .byte 0"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 127"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 128"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 255"), std::string::npos);
+    EXPECT_EQ(assembly.find("  .quad 255"), std::string::npos);
+    EXPECT_NE(assembly.find("l8"), std::string::npos);
+    EXPECT_NE(assembly.find("and"), std::string::npos);
+}
+
+TEST(Compiler, EmitsStringLiteralsAsNullTerminatedData) {
+    Compiler compiler;
+
+    const std::string assembly = compiler.compile(R"(
+char *message = "hi\n";
+
+int main() {
+  return message[1];
+}
+)");
+
+    EXPECT_NE(assembly.find(".data"), std::string::npos);
+    EXPECT_NE(assembly.find("S0:"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 104"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 105"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 10"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 0"), std::string::npos);
+    EXPECT_NE(assembly.find("  .quad 8"), std::string::npos);
+    EXPECT_NE(assembly.find("l8"), std::string::npos);
+}
+
+TEST(Compiler, InitializesCharArraysFromStringLiterals) {
+    Compiler compiler;
+
+    const std::string assembly = compiler.compile(R"(
+char global[] = "ok";
+
+int main() {
+  char local[4] = "go";
+  return global[1] + local[0];
+}
+)");
+
+    EXPECT_NE(assembly.find("G0:"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 111"), std::string::npos);
+    EXPECT_NE(assembly.find("  .byte 107"), std::string::npos);
+    EXPECT_NE(assembly.find("s8"), std::string::npos);
+    EXPECT_NE(assembly.find("l8"), std::string::npos);
+}
+
 TEST(Compiler, RejectsUnsupportedGlobalForms) {
     Compiler compiler;
 

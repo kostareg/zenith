@@ -18,12 +18,60 @@
 namespace zenith::compiler {
 namespace {
 
+struct StorageInfo {
+    std::int64_t size = 8;
+    bool is_unsigned = false;
+};
+
 constexpr std::int64_t kWordSize = 8;
 constexpr std::int64_t kSavedRegisterBytes = 16;
 constexpr std::uint64_t kMaxPositiveImmediate = 16383;
 constexpr std::uint64_t kConstantChunkBits = 14;
 constexpr std::uint64_t kConstantChunkMask = (1ULL << kConstantChunkBits) - 1ULL;
 constexpr std::int64_t kInitialStackPointer = 16000;
+
+[[nodiscard]] bool has_primitive(const Type& type, PrimitiveType primitive) noexcept {
+    for (const PrimitiveType specifier : type.primitive_specifiers) {
+        if (specifier == primitive) return true;
+    }
+    return false;
+}
+
+[[nodiscard]] StorageInfo storage_for_type(const Type& type, const Declarator& declarator) noexcept {
+    if (declarator.pointer_depth > 0) {
+        return StorageInfo{kWordSize, true};
+    }
+
+    if (has_primitive(type, PrimitiveType::Bool)) return StorageInfo{1, true};
+    if (has_primitive(type, PrimitiveType::Int8)) return StorageInfo{1, false};
+    if (has_primitive(type, PrimitiveType::UInt8)) return StorageInfo{1, true};
+    if (has_primitive(type, PrimitiveType::Int16)) return StorageInfo{2, false};
+    if (has_primitive(type, PrimitiveType::UInt16)) return StorageInfo{2, true};
+    if (has_primitive(type, PrimitiveType::Int32)) return StorageInfo{4, false};
+    if (has_primitive(type, PrimitiveType::UInt32)) return StorageInfo{4, true};
+    if (has_primitive(type, PrimitiveType::Char)) return StorageInfo{1, has_primitive(type, PrimitiveType::Unsigned)};
+
+    return StorageInfo{kWordSize, has_primitive(type, PrimitiveType::Unsigned) || has_primitive(type, PrimitiveType::UInt64)};
+}
+
+[[nodiscard]] StorageInfo storage_for_indexed_type(const Type& type, const Declarator& declarator) noexcept {
+    if (declarator.pointer_depth == 0) {
+        return storage_for_type(type, declarator);
+    }
+
+    if (declarator.pointer_depth > 1) {
+        return StorageInfo{kWordSize, true};
+    }
+
+    Declarator indexed;
+    indexed.pointer_depth = 0;
+    return storage_for_type(type, indexed);
+}
+
+[[nodiscard]] std::uint64_t mask_for_size(std::int64_t size) noexcept {
+    if (size >= kWordSize) return std::numeric_limits<std::uint64_t>::max();
+    return (1ULL << (static_cast<unsigned>(size) * 8U)) - 1ULL;
+}
 
 template <typename... Visitors> struct Overloaded : Visitors... {
     using Visitors::operator()...;
@@ -87,15 +135,23 @@ class Emitter {
 
 struct Symbol {
     std::int64_t offset = 0;
-    std::size_t slots = 1;
+    std::size_t elements = 1;
+    std::int64_t element_size = 8;
+    bool is_unsigned = false;
     bool is_array = false;
+    std::int64_t indexed_element_size = 8;
+    bool indexed_is_unsigned = false;
 };
 
 struct GlobalSymbol {
     std::int64_t address = 0;
-    std::size_t slots = 1;
+    std::size_t elements = 1;
+    std::int64_t element_size = 8;
+    bool is_unsigned = false;
     bool is_array = false;
     std::string label;
+    std::int64_t indexed_element_size = 8;
+    bool indexed_is_unsigned = false;
 };
 
 struct GlobalDefinition {
@@ -144,6 +200,7 @@ class CodeGenerator {
     std::vector<std::string> function_order;
     std::unordered_map<std::string, std::int64_t> constants;
     std::unordered_map<std::string, GlobalSymbol> globals;
+    std::unordered_map<std::string, GlobalSymbol> string_literals;
     std::vector<GlobalDefinition> global_order;
     std::vector<std::unordered_map<std::string, Symbol>> scopes;
     std::vector<std::string> break_labels;
@@ -151,6 +208,7 @@ class CodeGenerator {
     std::string current_return_label;
     int next_function_label = 0;
     int next_global_label = 0;
+    int next_string_label = 0;
     int next_label = 0;
     std::int64_t next_global_address = 0;
     std::int64_t next_frame_offset = kSavedRegisterBytes;
@@ -180,6 +238,7 @@ class CodeGenerator {
                         const std::string label = "F" + std::to_string(next_function_label++);
                         functions.emplace(name, FunctionInfo{&function, label});
                         function_order.push_back(name);
+                        collect_string_literals(function.body);
                     },
                 },
                 declaration
@@ -240,39 +299,57 @@ class CodeGenerator {
                 fail_at(variable.declarator.location, "global variable '" + name + "' conflicts with an enum constant");
             }
 
-            const std::size_t slots = slots_for_declarator(variable.declarator, variable.initializer.get());
+            const StorageInfo storage = storage_for_type(*declaration.type, variable.declarator);
+            const StorageInfo indexed_storage = storage_for_indexed_type(*declaration.type, variable.declarator);
+            const std::size_t elements = elements_for_declarator(variable.declarator, variable.initializer.get());
             const bool is_array = !variable.declarator.array_dimensions.empty();
-            const std::int64_t address = allocate_global_slots(slots, variable.declarator.location);
+            const std::int64_t address = allocate_global_storage(elements, storage.size, variable.declarator.location);
             const std::string label = "G" + std::to_string(next_global_label++);
-            const GlobalSymbol symbol{address, slots, is_array, label};
-            std::vector<std::int64_t> values = global_initializer_values(variable.initializer.get(), slots, is_array);
+            const GlobalSymbol symbol{
+                address,
+                elements,
+                storage.size,
+                storage.is_unsigned,
+                is_array,
+                label,
+                indexed_storage.size,
+                indexed_storage.is_unsigned,
+            };
+            std::vector<std::int64_t> values =
+                global_initializer_values(variable.initializer.get(), elements, storage, is_array);
 
             globals.emplace(name, symbol);
             global_order.push_back(GlobalDefinition{name, symbol, std::move(values)});
         }
     }
 
-    [[nodiscard]] std::int64_t allocate_global_slots(std::size_t slots, SourceLocation location) {
-        if (slots == 0 || slots > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max() / kWordSize)) {
+    [[nodiscard]] std::int64_t
+    allocate_global_storage(std::size_t elements, std::int64_t element_size, SourceLocation location) {
+        if (elements == 0 || element_size <= 0 ||
+            elements > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max() / element_size)) {
             fail_at(location, "invalid global storage size");
         }
         const std::int64_t address = next_global_address;
-        next_global_address += static_cast<std::int64_t>(slots) * kWordSize;
+        next_global_address += static_cast<std::int64_t>(elements) * element_size;
         return address;
     }
 
     [[nodiscard]] std::vector<std::int64_t>
-    global_initializer_values(const Initializer* initializer, std::size_t slots, bool is_array) {
+    global_initializer_values(const Initializer* initializer, std::size_t slots, StorageInfo storage, bool is_array) {
         std::vector<std::int64_t> values(slots, 0);
         if (initializer == nullptr) {
             return values;
         }
 
         if (!initializer->is_list()) {
+            if (is_array && is_string_literal_initializer(*initializer)) {
+                fill_string_initializer_values(*initializer->expression, values, storage);
+                return values;
+            }
             if (is_array) {
                 fail_at(initializer->location, "array initializers must use initializer lists");
             }
-            values[0] = require_constant(*initializer->expression, "global initializer");
+            values[0] = require_initializer_constant(*initializer->expression, "global initializer");
             return values;
         }
 
@@ -288,10 +365,233 @@ class CodeGenerator {
             if (value.is_list()) {
                 fail_at(value.location, "nested initializer lists are not supported yet");
             }
-            values[i] = require_constant(*value.expression, "global initializer");
+            values[i] = require_initializer_constant(*value.expression, "global initializer");
         }
 
         return values;
+    }
+
+    [[nodiscard]] const LiteralExpression* string_literal_expression(const Expression& expression) const noexcept {
+        const auto* literal = std::get_if<LiteralExpression>(&expression.node);
+        if (literal == nullptr || literal->kind != LiteralKind::String) {
+            return nullptr;
+        }
+        return literal;
+    }
+
+    [[nodiscard]] bool is_string_literal_initializer(const Initializer& initializer) const noexcept {
+        return initializer.expression != nullptr && string_literal_expression(*initializer.expression) != nullptr;
+    }
+
+    [[nodiscard]] std::size_t string_initializer_size(const Expression& expression) const {
+        const LiteralExpression* literal = string_literal_expression(expression);
+        if (literal == nullptr) {
+            throw std::runtime_error("internal compiler error: expected string literal initializer");
+        }
+        return literal->text.size() + 1;
+    }
+
+    [[nodiscard]] std::int64_t require_initializer_constant(const Expression& expression, std::string_view context) {
+        if (const LiteralExpression* literal = string_literal_expression(expression)) {
+            return intern_string_literal(literal->text, expression.location).address;
+        }
+        return require_constant(expression, context);
+    }
+
+    void fill_string_initializer_values(const Expression& expression, std::vector<std::int64_t>& values, StorageInfo storage) {
+        if (storage.size != 1) {
+            fail_at(expression.location, "string literals can only initialize byte-sized arrays");
+        }
+
+        const LiteralExpression* literal = string_literal_expression(expression);
+        if (literal == nullptr) {
+            throw std::runtime_error("internal compiler error: expected string literal initializer");
+        }
+        if (literal->text.size() + 1 > values.size()) {
+            fail_at(expression.location, "string literal is too large for array initializer");
+        }
+
+        for (std::size_t i = 0; i < literal->text.size(); ++i) {
+            values[i] = static_cast<unsigned char>(literal->text[i]);
+        }
+        values[literal->text.size()] = 0;
+    }
+
+    void compile_string_initializer(
+        const Expression& expression, std::int64_t offset, std::size_t elements, StorageInfo storage
+    ) {
+        std::vector<std::int64_t> values(elements, 0);
+        fill_string_initializer_values(expression, values, storage);
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            emit_load_constant("t0", static_cast<std::uint64_t>(values[i]));
+            emit_store_to_frame("t0", offset + static_cast<std::int64_t>(i) * storage.size, storage.size);
+        }
+    }
+
+    const GlobalSymbol& intern_string_literal(const std::string& text, SourceLocation location) {
+        if (const auto existing = string_literals.find(text); existing != string_literals.end()) {
+            return existing->second;
+        }
+
+        const std::size_t elements = text.size() + 1;
+        const std::int64_t address = allocate_global_storage(elements, 1, location);
+        const std::string label = "S" + std::to_string(next_string_label++);
+        const GlobalSymbol symbol{address, elements, 1, true, true, label, 1, true};
+
+        std::vector<std::int64_t> values;
+        values.reserve(elements);
+        for (const char ch : text) {
+            values.push_back(static_cast<unsigned char>(ch));
+        }
+        values.push_back(0);
+
+        auto [entry, _] = string_literals.emplace(text, symbol);
+        global_order.push_back(GlobalDefinition{"", symbol, std::move(values)});
+        return entry->second;
+    }
+
+    [[nodiscard]] const GlobalSymbol& string_literal_symbol(const std::string& text) const {
+        const auto literal = string_literals.find(text);
+        if (literal == string_literals.end()) {
+            throw std::runtime_error("internal compiler error: missing string literal data");
+        }
+        return literal->second;
+    }
+
+    void collect_string_literals(const Initializer* initializer) {
+        if (initializer == nullptr) {
+            return;
+        }
+
+        if (!initializer->is_list()) {
+            collect_string_literals(*initializer->expression);
+            return;
+        }
+
+        for (const InitializerPtr& value : initializer->values) {
+            collect_string_literals(value.get());
+        }
+    }
+
+    void collect_string_literals(const Statement& statement) {
+        std::visit(
+            Overloaded{
+                [](const EmptyStatement&) {},
+                [this](const ExpressionStatement& expression) {
+                    collect_string_literals(*expression.expression);
+                },
+                [this](const DeclarationStatement& declaration) {
+                    for (const VariableDeclarator& variable : declaration.declaration.declarators) {
+                        collect_string_literals(variable.initializer.get());
+                    }
+                },
+                [this](const CompoundStatement& compound) {
+                    collect_string_literals(compound);
+                },
+                [this](const IfStatement& if_statement) {
+                    collect_string_literals(*if_statement.condition);
+                    collect_string_literals(*if_statement.then_branch);
+                    if (if_statement.else_branch != nullptr) {
+                        collect_string_literals(*if_statement.else_branch);
+                    }
+                },
+                [this](const WhileStatement& while_statement) {
+                    collect_string_literals(*while_statement.condition);
+                    collect_string_literals(*while_statement.body);
+                },
+                [this](const ForStatement& for_statement) {
+                    std::visit(
+                        Overloaded{
+                            [](const std::monostate&) {},
+                            [this](const VariableDeclaration& declaration) {
+                                for (const VariableDeclarator& variable : declaration.declarators) {
+                                    collect_string_literals(variable.initializer.get());
+                                }
+                            },
+                            [this](const ExpressionPtr& expression) {
+                                collect_string_literals(*expression);
+                            },
+                        },
+                        for_statement.initializer.value
+                    );
+                    if (for_statement.condition != nullptr) {
+                        collect_string_literals(*for_statement.condition);
+                    }
+                    if (for_statement.increment != nullptr) {
+                        collect_string_literals(*for_statement.increment);
+                    }
+                    collect_string_literals(*for_statement.body);
+                },
+                [](const BreakStatement&) {},
+                [](const ContinueStatement&) {},
+                [this](const ReturnStatement& return_statement) {
+                    if (return_statement.value != nullptr) {
+                        collect_string_literals(*return_statement.value);
+                    }
+                },
+                [this](const SwitchStatement& switch_statement) {
+                    collect_string_literals(*switch_statement.expression);
+                    collect_string_literals(*switch_statement.body);
+                },
+                [this](const CaseStatement& case_statement) {
+                    collect_string_literals(*case_statement.expression);
+                    collect_string_literals(*case_statement.body);
+                },
+                [this](const DefaultStatement& default_statement) {
+                    collect_string_literals(*default_statement.body);
+                },
+            },
+            statement.node
+        );
+    }
+
+    void collect_string_literals(const CompoundStatement& compound) {
+        for (const StatementPtr& statement : compound.statements) {
+            collect_string_literals(*statement);
+        }
+    }
+
+    void collect_string_literals(const Expression& expression) {
+        std::visit(
+            Overloaded{
+                [this, &expression](const LiteralExpression& literal) {
+                    if (literal.kind == LiteralKind::String) {
+                        intern_string_literal(literal.text, expression.location);
+                    }
+                },
+                [](const IdentifierExpression&) {},
+                [this](const UnaryExpression& unary) {
+                    collect_string_literals(*unary.operand);
+                },
+                [this](const BinaryExpression& binary) {
+                    collect_string_literals(*binary.left);
+                    collect_string_literals(*binary.right);
+                },
+                [this](const AssignmentExpression& assignment) {
+                    collect_string_literals(*assignment.target);
+                    collect_string_literals(*assignment.value);
+                },
+                [this](const ConditionalExpression& conditional) {
+                    collect_string_literals(*conditional.condition);
+                    collect_string_literals(*conditional.then_branch);
+                    collect_string_literals(*conditional.else_branch);
+                },
+                [this](const CallExpression& call) {
+                    collect_string_literals(*call.callee);
+                    for (const ExpressionPtr& argument : call.arguments) {
+                        collect_string_literals(*argument);
+                    }
+                },
+                [this](const IndexExpression& index) {
+                    collect_string_literals(*index.object);
+                    collect_string_literals(*index.index);
+                },
+                [this](const MemberExpression& member) {
+                    collect_string_literals(*member.object);
+                },
+            },
+            expression.node
+        );
     }
 
     [[nodiscard]] std::string entry_label() const {
@@ -315,9 +615,25 @@ class CodeGenerator {
         for (const GlobalDefinition& global : global_order) {
             emitter->label(global.symbol.label);
             for (const std::int64_t value : global.values) {
-                emitter->emit(".quad " + std::to_string(value));
+                emit_data_value(value, global.symbol.element_size);
             }
         }
+    }
+
+    void emit_data_value(std::int64_t value, std::int64_t size) {
+        if (size == kWordSize) {
+            emitter->emit(".quad " + std::to_string(value));
+            return;
+        }
+
+        std::ostringstream line;
+        line << ".byte ";
+        const std::uint64_t bits = static_cast<std::uint64_t>(value) & mask_for_size(size);
+        for (std::int64_t i = 0; i < size; ++i) {
+            if (i > 0) line << ", ";
+            line << ((bits >> (static_cast<unsigned>(i) * 8U)) & 0xFFU);
+        }
+        emitter->emit(line.str());
     }
 
     void compile_function(const FunctionInfo& function) {
@@ -348,8 +664,13 @@ class CodeGenerator {
             }
 
             const std::string name = *parameter.declarator.name;
-            const std::int64_t offset = allocate_slots(1, parameter.declarator.location);
-            define_symbol(name, Symbol{offset, 1, false}, parameter.declarator.location);
+            const std::int64_t offset = allocate_storage(1, kWordSize, parameter.declarator.location);
+            const StorageInfo indexed_storage = storage_for_indexed_type(*parameter.type, parameter.declarator);
+            define_symbol(
+                name,
+                Symbol{offset, 1, kWordSize, false, false, indexed_storage.size, indexed_storage.is_unsigned},
+                parameter.declarator.location
+            );
             emitter->emit("s64 a" + std::to_string(i) + ", s0, " + std::to_string(offset));
         }
 
@@ -413,13 +734,14 @@ class CodeGenerator {
         return nullptr;
     }
 
-    [[nodiscard]] std::int64_t allocate_slots(std::size_t slots, SourceLocation location) {
-        if (slots == 0 || slots > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max() / kWordSize)) {
+    [[nodiscard]] std::int64_t allocate_storage(std::size_t elements, std::int64_t element_size, SourceLocation location) {
+        if (elements == 0 || element_size <= 0 ||
+            elements > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max() / element_size)) {
             fail_at(location, "invalid storage size");
         }
 
         const std::int64_t offset = next_frame_offset;
-        next_frame_offset += static_cast<std::int64_t>(slots) * kWordSize;
+        next_frame_offset += static_cast<std::int64_t>(elements) * element_size;
         return offset;
     }
 
@@ -641,16 +963,30 @@ class CodeGenerator {
 
         for (const VariableDeclarator& variable : declaration.declarators) {
             const std::string name = require_name(variable.declarator, "local variable");
-            const std::size_t slots = slots_for_declarator(variable.declarator, variable.initializer.get());
-            const std::int64_t offset = allocate_slots(slots, variable.declarator.location);
+            const StorageInfo storage = storage_for_type(*declaration.type, variable.declarator);
+            const StorageInfo indexed_storage = storage_for_indexed_type(*declaration.type, variable.declarator);
+            const std::size_t elements = elements_for_declarator(variable.declarator, variable.initializer.get());
+            const std::int64_t offset = allocate_storage(elements, storage.size, variable.declarator.location);
             const bool is_array = !variable.declarator.array_dimensions.empty();
 
-            define_symbol(name, Symbol{offset, slots, is_array}, variable.declarator.location);
-            compile_initializer(variable.initializer.get(), offset, slots, is_array);
+            define_symbol(
+                name,
+                Symbol{
+                    offset,
+                    elements,
+                    storage.size,
+                    storage.is_unsigned,
+                    is_array,
+                    indexed_storage.size,
+                    indexed_storage.is_unsigned,
+                },
+                variable.declarator.location
+            );
+            compile_initializer(variable.initializer.get(), offset, elements, storage, is_array);
         }
     }
 
-    [[nodiscard]] std::size_t slots_for_declarator(const Declarator& declarator, const Initializer* initializer) {
+    [[nodiscard]] std::size_t elements_for_declarator(const Declarator& declarator, const Initializer* initializer) {
         if (declarator.array_dimensions.empty()) {
             return 1;
         }
@@ -664,6 +1000,9 @@ class CodeGenerator {
             } else if (i == 0 && declarator.array_dimensions.size() == 1 && initializer != nullptr &&
                        initializer->is_list()) {
                 size = static_cast<std::int64_t>(initializer->values.size());
+            } else if (i == 0 && declarator.array_dimensions.size() == 1 && initializer != nullptr &&
+                       is_string_literal_initializer(*initializer)) {
+                size = static_cast<std::int64_t>(string_initializer_size(*initializer->expression));
             } else {
                 fail_at(declarator.location, "array dimensions must have compile-time sizes");
             }
@@ -680,18 +1019,24 @@ class CodeGenerator {
         return slots;
     }
 
-    void compile_initializer(const Initializer* initializer, std::int64_t offset, std::size_t slots, bool is_array) {
+    void compile_initializer(
+        const Initializer* initializer, std::int64_t offset, std::size_t elements, StorageInfo storage, bool is_array
+    ) {
         if (initializer == nullptr) {
             return;
         }
 
         if (!initializer->is_list()) {
+            if (is_array && is_string_literal_initializer(*initializer)) {
+                compile_string_initializer(*initializer->expression, offset, elements, storage);
+                return;
+            }
             if (is_array) {
                 fail_at(initializer->location, "array initializers must use initializer lists");
             }
 
             compile_expression(*initializer->expression);
-            emit_store_to_frame("t0", offset);
+            emit_store_to_frame("t0", offset, storage.size);
             return;
         }
 
@@ -699,7 +1044,7 @@ class CodeGenerator {
             fail_at(initializer->location, "scalar initializer lists must contain exactly one value");
         }
 
-        if (initializer->values.size() > slots) {
+        if (initializer->values.size() > elements) {
             fail_at(initializer->location, "too many values in initializer list");
         }
 
@@ -710,12 +1055,12 @@ class CodeGenerator {
             }
 
             compile_expression(*value.expression);
-            emit_store_to_frame("t0", offset + static_cast<std::int64_t>(i) * kWordSize);
+            emit_store_to_frame("t0", offset + static_cast<std::int64_t>(i) * storage.size, storage.size);
         }
 
-        for (std::size_t i = initializer->values.size(); i < slots; ++i) {
+        for (std::size_t i = initializer->values.size(); i < elements; ++i) {
             emit_load_constant("t0", 0);
-            emit_store_to_frame("t0", offset + static_cast<std::int64_t>(i) * kWordSize);
+            emit_store_to_frame("t0", offset + static_cast<std::int64_t>(i) * storage.size, storage.size);
         }
     }
 
@@ -745,7 +1090,8 @@ class CodeGenerator {
                 },
                 [this](const IndexExpression& index) {
                     compile_lvalue_address(index);
-                    emitter->emit("l64 t0, t0, 0");
+                    const StorageInfo storage = storage_for_lvalue(index);
+                    emit_load_from_address("t0", "t0", 0, storage);
                 },
                 [](const MemberExpression&) {
                     throw std::runtime_error("struct member access is not supported yet");
@@ -765,7 +1111,8 @@ class CodeGenerator {
             emit_load_constant("t0", literal.boolean_value ? 1U : 0U);
             return;
         case LiteralKind::String:
-            throw std::runtime_error("string literals are not supported yet");
+            emit_load_constant("t0", static_cast<std::uint64_t>(string_literal_symbol(literal.text).address));
+            return;
         }
 
         throw std::runtime_error("unsupported literal");
@@ -776,7 +1123,7 @@ class CodeGenerator {
             if (symbol->is_array) {
                 emit_frame_address(symbol->offset);
             } else {
-                emit_load_from_frame("t0", symbol->offset);
+                emit_load_from_frame("t0", symbol->offset, StorageInfo{symbol->element_size, symbol->is_unsigned});
             }
             return;
         }
@@ -820,7 +1167,7 @@ class CodeGenerator {
             return;
         case UnaryOperator::Dereference:
             compile_expression(*unary.operand);
-            emitter->emit("l64 t0, t0, 0");
+            emit_load_from_address("t0", "t0", 0, storage_for_dereference(*unary.operand));
             return;
         case UnaryOperator::PreIncrement:
             compile_increment(*unary.operand, true, true);
@@ -845,14 +1192,15 @@ class CodeGenerator {
         }
 
         compile_lvalue_address(target);
-        emitter->emit("l64 t1, t0, 0");
+        const StorageInfo storage = storage_for_lvalue(target);
+        emit_load_from_address("t1", "t0", 0, storage);
         if (increment) {
             emitter->emit("addi t2, t1, 1");
         } else {
             emit_load_constant("t2", 1);
             emitter->emit("sub t2, t1, t2");
         }
-        emitter->emit("s64 t2, t0, 0");
+        emit_store_to_address("t2", "t0", 0, storage.size);
         move_register("t0", result_is_new_value ? "t2" : "t1");
     }
 
@@ -914,11 +1262,12 @@ class CodeGenerator {
         pop_register("t1");
 
         if (assignment.op != AssignmentOperator::Assign) {
-            emitter->emit("l64 t2, t1, 0");
+            const StorageInfo storage = storage_for_lvalue(*assignment.target);
+            emit_load_from_address("t2", "t1", 0, storage);
             emit_assignment_operation(assignment.op, "t2", "t0", "t0");
         }
 
-        emitter->emit("s64 t0, t1, 0");
+        emit_store_to_address("t0", "t1", 0, storage_for_lvalue(*assignment.target).size);
     }
 
     void emit_assignment_operation(
@@ -1131,11 +1480,24 @@ class CodeGenerator {
     }
 
     void compile_index_address(const IndexExpression& index) {
+        std::int64_t element_size = kWordSize;
         if (const auto* identifier = std::get_if<IdentifierExpression>(&index.object->node)) {
-            if (const Symbol* symbol = find_symbol(identifier->name); symbol != nullptr && symbol->is_array) {
-                emit_frame_address(symbol->offset);
-            } else if (const GlobalSymbol* global = find_global(identifier->name); global != nullptr && global->is_array) {
-                emit_global_address(*global);
+            if (const Symbol* symbol = find_symbol(identifier->name)) {
+                if (symbol->is_array) {
+                    emit_frame_address(symbol->offset);
+                    element_size = symbol->element_size;
+                } else {
+                    compile_expression(*index.object);
+                    element_size = symbol->indexed_element_size;
+                }
+            } else if (const GlobalSymbol* global = find_global(identifier->name)) {
+                if (global->is_array) {
+                    emit_global_address(*global);
+                    element_size = global->element_size;
+                } else {
+                    compile_expression(*index.object);
+                    element_size = global->indexed_element_size;
+                }
             } else {
                 compile_expression(*index.object);
             }
@@ -1145,10 +1507,80 @@ class CodeGenerator {
 
         push_register("t0");
         compile_expression(*index.index);
-        emit_load_constant("t6", static_cast<std::uint64_t>(kWordSize));
+        emit_load_constant("t6", static_cast<std::uint64_t>(element_size));
         emitter->emit("mul t0, t0, t6");
         pop_register("t1");
         emitter->emit("add t0, t1, t0");
+    }
+
+    [[nodiscard]] StorageInfo storage_for_lvalue(const Expression& expression) const {
+        return std::visit(
+            Overloaded{
+                [this](const IdentifierExpression& identifier) -> StorageInfo {
+                    if (const Symbol* symbol = find_symbol(identifier.name)) {
+                        return StorageInfo{symbol->element_size, symbol->is_unsigned};
+                    }
+                    if (const GlobalSymbol* symbol = find_global(identifier.name)) {
+                        return StorageInfo{symbol->element_size, symbol->is_unsigned};
+                    }
+                    return StorageInfo{};
+                },
+                [](const UnaryExpression&) -> StorageInfo {
+                    return StorageInfo{};
+                },
+                [this](const IndexExpression& index) -> StorageInfo {
+                    if (const auto* identifier = std::get_if<IdentifierExpression>(&index.object->node)) {
+                        if (const Symbol* symbol = find_symbol(identifier->name); symbol != nullptr && symbol->is_array) {
+                            return StorageInfo{symbol->element_size, symbol->is_unsigned};
+                        }
+                        if (const GlobalSymbol* global = find_global(identifier->name); global != nullptr && global->is_array) {
+                            return StorageInfo{global->element_size, global->is_unsigned};
+                        }
+                        if (const Symbol* symbol = find_symbol(identifier->name)) {
+                            return StorageInfo{symbol->indexed_element_size, symbol->indexed_is_unsigned};
+                        }
+                        if (const GlobalSymbol* global = find_global(identifier->name)) {
+                            return StorageInfo{global->indexed_element_size, global->indexed_is_unsigned};
+                        }
+                    }
+                    return StorageInfo{};
+                },
+                [](const auto&) -> StorageInfo {
+                    return StorageInfo{};
+                },
+            },
+            expression.node
+        );
+    }
+
+    [[nodiscard]] StorageInfo storage_for_lvalue(const IndexExpression& index) const {
+        if (const auto* identifier = std::get_if<IdentifierExpression>(&index.object->node)) {
+            if (const Symbol* symbol = find_symbol(identifier->name); symbol != nullptr && symbol->is_array) {
+                return StorageInfo{symbol->element_size, symbol->is_unsigned};
+            }
+            if (const GlobalSymbol* global = find_global(identifier->name); global != nullptr && global->is_array) {
+                return StorageInfo{global->element_size, global->is_unsigned};
+            }
+            if (const Symbol* symbol = find_symbol(identifier->name)) {
+                return StorageInfo{symbol->indexed_element_size, symbol->indexed_is_unsigned};
+            }
+            if (const GlobalSymbol* global = find_global(identifier->name)) {
+                return StorageInfo{global->indexed_element_size, global->indexed_is_unsigned};
+            }
+        }
+        return StorageInfo{};
+    }
+
+    [[nodiscard]] StorageInfo storage_for_dereference(const Expression& expression) const {
+        if (const auto* identifier = std::get_if<IdentifierExpression>(&expression.node)) {
+            if (const Symbol* symbol = find_symbol(identifier->name)) {
+                return StorageInfo{symbol->indexed_element_size, symbol->indexed_is_unsigned};
+            }
+            if (const GlobalSymbol* global = find_global(identifier->name)) {
+                return StorageInfo{global->indexed_element_size, global->indexed_is_unsigned};
+            }
+        }
+        return StorageInfo{};
     }
 
     [[nodiscard]] bool is_array_identifier(const Expression& expression) const {
@@ -1178,14 +1610,14 @@ class CodeGenerator {
         emit_add_immediate("t0", "s0", offset);
     }
 
-    void emit_load_from_frame(std::string_view reg, std::int64_t offset) {
+    void emit_load_from_frame(std::string_view reg, std::int64_t offset, StorageInfo storage) {
         ensure_frame_offset(offset);
-        emitter->emit("l64 " + std::string(reg) + ", s0, " + std::to_string(offset));
+        emit_load_from_address(reg, "s0", offset, storage);
     }
 
-    void emit_store_to_frame(std::string_view reg, std::int64_t offset) {
+    void emit_store_to_frame(std::string_view reg, std::int64_t offset, std::int64_t size) {
         ensure_frame_offset(offset);
-        emitter->emit("s64 " + std::string(reg) + ", s0, " + std::to_string(offset));
+        emit_store_to_address(reg, "s0", offset, size);
     }
 
     void emit_global_address(const GlobalSymbol& symbol) {
@@ -1194,7 +1626,54 @@ class CodeGenerator {
 
     void emit_load_from_global(std::string_view reg, const GlobalSymbol& symbol) {
         emit_global_address(symbol);
-        emitter->emit("l64 " + std::string(reg) + ", t0, 0");
+        emit_load_from_address(reg, "t0", 0, StorageInfo{symbol.element_size, symbol.is_unsigned});
+    }
+
+    void emit_load_from_address(std::string_view reg, std::string_view base, std::int64_t offset, StorageInfo storage) {
+        const std::string reg_name(reg);
+        const std::string base_name(base);
+        switch (storage.size) {
+        case 1:
+            emitter->emit("l8 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            break;
+        case 2:
+            emitter->emit("l16 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            break;
+        case 4:
+            emitter->emit("l32 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            break;
+        case 8:
+            emitter->emit("l64 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            break;
+        default:
+            throw std::runtime_error("unsupported load size");
+        }
+
+        if (storage.is_unsigned && storage.size < kWordSize) {
+            emit_load_constant("t6", mask_for_size(storage.size));
+            emitter->emit("and " + reg_name + ", " + reg_name + ", t6");
+        }
+    }
+
+    void emit_store_to_address(std::string_view reg, std::string_view base, std::int64_t offset, std::int64_t size) {
+        const std::string reg_name(reg);
+        const std::string base_name(base);
+        switch (size) {
+        case 1:
+            emitter->emit("s8 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            return;
+        case 2:
+            emitter->emit("s16 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            return;
+        case 4:
+            emitter->emit("s32 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            return;
+        case 8:
+            emitter->emit("s64 " + reg_name + ", " + base_name + ", " + std::to_string(offset));
+            return;
+        default:
+            throw std::runtime_error("unsupported store size");
+        }
     }
 
     void ensure_frame_offset(std::int64_t offset) {
