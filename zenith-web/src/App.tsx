@@ -8,8 +8,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider";
+import { useZenithCompiler } from "@/components/wasm/zenith-compiler-provider";
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
-import { useZenithCompiler } from "./components/wasm/zenith-compiler-provider";
 
 const REGISTER_COUNT = 32;
 const RUN_FRAME_BUDGET_MS = 8;
@@ -222,8 +222,10 @@ inner: add a4, a0, a1
   blt a5, a6, outer
 `;
 
-const ZENITH_C_PLACEHOLDER = `// Zenith C is not implemented yet.
-// Use the Zenith Assembly or Machine Code tabs for now.`;
+const DEFAULT_ZENITH_C = `int main() {
+    return 7;
+}
+`;
 
 type EditorTab = "zenith-c" | "assembly" | "machine-code";
 
@@ -236,7 +238,7 @@ const EDITOR_TABS: Array<{ id: EditorTab; label: string }> = [
 const EDITOR_TAB_META = {
     "zenith-c": {
         title: "Zenith C",
-        description: "The C frontend is not implemented yet.",
+        description: "Compile Zenith C into assembly, machine code, and the emulator.",
     },
     assembly: {
         title: "Zenith Assembly",
@@ -349,11 +351,12 @@ function unknownErrorMessage(error: unknown) {
 export function App() {
     const assembler = useZenithAssembler();
     const emulator = useZenithEmulator();
-    // @ts-ignore
     const compiler = useZenithCompiler();
-    const [activeTab, setActiveTab] = useState<EditorTab>("assembly");
+    const [activeTab, setActiveTab] = useState<EditorTab>("zenith-c");
+    const [zenithCSource, setZenithCSource] = useState(DEFAULT_ZENITH_C);
     const [assemblySource, setAssemblySource] = useState(DEFAULT_ASSEMBLY);
     const [machineCode, setMachineCode] = useState("");
+    const [compilerError, setCompilerError] = useState<string | null>(null);
     const [assemblyError, setAssemblyError] = useState<string | null>(null);
     const [assemblyIsLoaded, setAssemblyIsLoaded] = useState(false);
     const [registers, setRegisters] = useState<Array<bigint>>(createZeroRegisters);
@@ -431,15 +434,9 @@ export function App() {
         [activeLine, baseEditorExtensions]
     );
 
-    const assemblyEditorExtensions = useMemo(
-        () => [...baseEditorExtensions, assemblyLanguage],
-        [baseEditorExtensions]
-    );
+    const assemblyEditorExtensions = useMemo(() => [...baseEditorExtensions, assemblyLanguage], [baseEditorExtensions]);
 
-    const readOnlyEditorExtensions = useMemo(
-        () => [...baseEditorExtensions, cLikeLanguage, EditorView.editable.of(false)],
-        [baseEditorExtensions]
-    );
+    const cEditorExtensions = useMemo(() => [...baseEditorExtensions, cLikeLanguage], [baseEditorExtensions]);
 
     useEffect(() => {
         const canvas = framebufferCanvasRef.current;
@@ -592,23 +589,40 @@ export function App() {
         setLastMessage("Running continuously.");
     }
 
+    function loadMachineCode(compiled: string, shouldRun: boolean) {
+        const compiledParseResult = parseProgram(compiled);
+        setIsRunning(false);
+        emulator?.reset();
+        setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
+        setInstructionIndex(0);
+        setMachineCode(compiled);
+        setFramebufferRevision((revision) => revision + 1);
+
+        if (
+            shouldRun &&
+            emulator &&
+            compiledParseResult.errors.length === 0 &&
+            compiledParseResult.instructions.length > 0
+        ) {
+            setIsRunning(true);
+        }
+
+        return compiledParseResult;
+    }
+
     function compileAndLoadAssembly() {
         if (!assembler) {
             setLastMessage("Assembler is still loading.");
             return;
         }
 
+        setCompilerError(null);
+
         try {
             const compiled = assembler.assemble(assemblySource);
-            const compiledParseResult = parseProgram(compiled);
+            const compiledParseResult = loadMachineCode(compiled, false);
             setAssemblyError(null);
             setAssemblyIsLoaded(true);
-            setIsRunning(false);
-            emulator?.reset();
-            setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
-            setInstructionIndex(0);
-            setMachineCode(compiled);
-            setFramebufferRevision((revision) => revision + 1);
             setActiveTab("machine-code");
             setLastMessage(
                 `Compiled and loaded ${compiledParseResult.instructions.length} machine-code instruction${
@@ -617,10 +631,46 @@ export function App() {
             );
         } catch (error) {
             const message = unknownErrorMessage(error);
+            setCompilerError(null);
             setAssemblyError(message);
             setAssemblyIsLoaded(false);
             setIsRunning(false);
             setLastMessage(`Assembly compile failed: ${message}`);
+        }
+    }
+
+    function compileAndRunZenithC(source: string, showMachineCode = false) {
+        setZenithCSource(source);
+        setIsRunning(false);
+
+        if (!compiler || !assembler) {
+            setLastMessage("Compiler and assembler are still loading.");
+            return;
+        }
+
+        try {
+            const compiledAssembly = compiler.compile(source);
+            setAssemblySource(compiledAssembly);
+            const compiledMachineCode = assembler.assemble(compiledAssembly);
+            const compiledParseResult = loadMachineCode(compiledMachineCode, true);
+            setCompilerError(null);
+            setAssemblyError(null);
+            setAssemblyIsLoaded(true);
+            if (showMachineCode) {
+                setActiveTab("machine-code");
+            }
+            setLastMessage(
+                `Compiled Zenith C through ${compiledParseResult.instructions.length} machine-code instruction${
+                    compiledParseResult.instructions.length === 1 ? "" : "s"
+                }${emulator ? " and started the emulator." : "; emulator is still loading."}`
+            );
+        } catch (error) {
+            const message = unknownErrorMessage(error);
+            setCompilerError(message);
+            setAssemblyError(null);
+            setAssemblyIsLoaded(false);
+            setIsRunning(false);
+            setLastMessage(`Zenith C pipeline failed: ${message}`);
         }
     }
 
@@ -669,10 +719,7 @@ export function App() {
                         <div className="min-w-0">
                             <TabsList className="mb-2">
                                 {EDITOR_TABS.map((tab) => (
-                                    <TabsTrigger
-                                        key={tab.id}
-                                        value={tab.id}
-                                    >
+                                    <TabsTrigger key={tab.id} value={tab.id}>
                                         {tab.label}
                                     </TabsTrigger>
                                 ))}
@@ -680,50 +727,59 @@ export function App() {
                             <h2 className="text-sm font-semibold">{activeTabMeta.title}</h2>
                             <p className="text-xs text-muted-foreground">{activeTabMeta.description}</p>
                         </div>
-                        {activeTab !== "zenith-c" ? (
-                            <div className="flex items-center gap-2">
-                                {activeTab === "assembly" ? (
-                                    <Button
-                                        disabled={!assembler}
-                                        onClick={compileAndLoadAssembly}
-                                        title="Compile and load assembly"
-                                        variant="outline"
-                                    >
-                                        <Hammer />
-                                        Compile & Load
-                                    </Button>
-                                ) : null}
+                        <div className="flex items-center gap-2">
+                            {activeTab === "zenith-c" ? (
                                 <Button
-                                    aria-label="Reset program"
-                                    disabled={!emulator || !activeTabCanUseLoadedProgram}
-                                    onClick={resetProgram}
-                                    size="icon"
-                                    title="Reset program"
+                                    disabled={!compiler || !assembler}
+                                    onClick={() => compileAndRunZenithC(zenithCSource, true)}
+                                    title="Compile and load Zenith C"
                                     variant="outline"
                                 >
-                                    <RotateCcw />
+                                    <Hammer />
+                                    Compile & Load
                                 </Button>
+                            ) : null}
+                            {activeTab === "assembly" ? (
                                 <Button
-                                    aria-label="Step instruction"
-                                    disabled={!canUseStepControl}
-                                    onClick={stepProgram}
-                                    size="icon"
-                                    title="Step instruction"
-                                    variant="secondary"
+                                    disabled={!assembler}
+                                    onClick={compileAndLoadAssembly}
+                                    title="Compile and load assembly"
+                                    variant="outline"
                                 >
-                                    <StepForward />
+                                    <Hammer />
+                                    Compile & Load
                                 </Button>
-                                <Button
-                                    aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
-                                    disabled={!canUseRunControl}
-                                    onClick={toggleRunProgram}
-                                    size="icon"
-                                    title={isRunning ? "Pause continuous execution" : "Run continuously"}
-                                >
-                                    {isRunning ? <Pause /> : <SkipForward />}
-                                </Button>
-                            </div>
-                        ) : null}
+                            ) : null}
+                            <Button
+                                aria-label="Reset program"
+                                disabled={!emulator || !activeTabCanUseLoadedProgram}
+                                onClick={resetProgram}
+                                size="icon"
+                                title="Reset program"
+                                variant="outline"
+                            >
+                                <RotateCcw />
+                            </Button>
+                            <Button
+                                aria-label="Step instruction"
+                                disabled={!canUseStepControl}
+                                onClick={stepProgram}
+                                size="icon"
+                                title="Step instruction"
+                                variant="secondary"
+                            >
+                                <StepForward />
+                            </Button>
+                            <Button
+                                aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
+                                disabled={!canUseRunControl}
+                                onClick={toggleRunProgram}
+                                size="icon"
+                                title={isRunning ? "Pause continuous execution" : "Run continuously"}
+                            >
+                                {isRunning ? <Pause /> : <SkipForward />}
+                            </Button>
+                        </div>
                     </div>
                     <TabsContent className="m-0 min-h-0 overflow-hidden" value="zenith-c">
                         <CodeMirror
@@ -733,9 +789,17 @@ export function App() {
                                 foldGutter: false,
                                 highlightSelectionMatches: false,
                             }}
-                            extensions={readOnlyEditorExtensions}
+                            extensions={cEditorExtensions}
                             height="100%"
-                            value={ZENITH_C_PLACEHOLDER}
+                            onChange={(value) => {
+                                setZenithCSource(value);
+                                setCompilerError(null);
+                                setAssemblyError(null);
+                                setAssemblyIsLoaded(false);
+                                setIsRunning(false);
+                                setLastMessage("Zenith C changed. Compile and load before running those changes.");
+                            }}
+                            value={zenithCSource}
                         />
                     </TabsContent>
                     <TabsContent className="m-0 min-h-0 overflow-hidden" value="assembly">
@@ -750,6 +814,7 @@ export function App() {
                             height="100%"
                             onChange={(value) => {
                                 setAssemblySource(value);
+                                setCompilerError(null);
                                 setAssemblyError(null);
                                 setAssemblyIsLoaded(false);
                                 setIsRunning(false);
@@ -771,6 +836,8 @@ export function App() {
                             onChange={(value) => {
                                 setIsRunning(false);
                                 setMachineCode(value);
+                                setCompilerError(null);
+                                setAssemblyError(null);
                                 setAssemblyIsLoaded(false);
                                 setInstructionIndex(0);
                                 setLastMessage("Machine code changed. Reset or step from the first parsed line.");
@@ -790,8 +857,14 @@ export function App() {
                     </div>
                     <div className="min-h-0 overflow-auto p-4 font-mono text-xs leading-6">
                         {!emulator ? <p>Loading emulator...</p> : null}
+                        {activeTab === "zenith-c" && !compiler ? <p>Loading compiler...</p> : null}
+                        {activeTab === "zenith-c" && !assembler ? <p>Loading assembler...</p> : null}
                         {activeTab === "assembly" && !assembler ? <p>Loading assembler...</p> : null}
-                        {assemblyError ? (
+                        {compilerError ? (
+                            <div className="text-destructive">
+                                <p>{compilerError}</p>
+                            </div>
+                        ) : assemblyError ? (
                             <div className="text-destructive">
                                 <p>{assemblyError}</p>
                             </div>
@@ -827,7 +900,7 @@ export function App() {
                 <div className="min-h-0 overflow-auto p-4">
                     <section className="rounded-lg border bg-background">
                         <div className="flex items-center justify-between border-b px-3 py-2">
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Framebuffer
                             </h3>
                             <span className="font-mono text-[11px] text-muted-foreground">
