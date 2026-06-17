@@ -532,7 +532,7 @@ function unknownErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
 }
 
-const SYSTEM_INCLUDE_BASE_URL = "/zenith-libc/";
+const SYSTEM_INCLUDE_BASE_URL = "zenith-libc/";
 const systemIncludeCache = new Map<string, Promise<string>>();
 
 function systemIncludeUrl(includePath: string) {
