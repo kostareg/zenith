@@ -36,6 +36,9 @@ if(ZENITH_COMPILER_BUILD_WASM)
 
   add_executable(zenith-compiler-wasm
     lib/zenith-compiler/src/zenith/compiler.cpp
+    lib/zenith-compiler/src/zenith/lexer.cpp
+    lib/zenith-compiler/src/zenith/parser.cpp
+    lib/zenith-compiler/src/zenith/preprocessor.cpp
   )
 
   target_link_libraries(zenith-compiler-wasm PRIVATE zenith-compiler::compile-options)
