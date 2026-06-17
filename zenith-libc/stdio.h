@@ -1,9 +1,9 @@
-#define ASCII_FONT_WIDTH 8
-#define ASCII_FONT_HEIGHT 16
-#define ASCII_FONT_FIRST 0
-#define ASCII_FONT_COUNT 128
+#define __ZENITH_LIBC_ASCII_FONT_WIDTH 8
+#define __ZENITH_LIBC_ASCII_FONT_HEIGHT 16
+#define __ZENITH_LIBC_ASCII_FONT_FIRST 0
+#define __ZENITH_LIBC_ASCII_FONT_COUNT 128
 
-uint8_t ASCII_8X16[ASCII_FONT_COUNT * ASCII_FONT_HEIGHT] = {
+uint8_t __ZENITH_LIBC_ASCII_BITMAP[__ZENITH_LIBC_ASCII_FONT_COUNT * __ZENITH_LIBC_ASCII_FONT_HEIGHT] = {
     /* 0x00 NUL */
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     /* 0x01 SOH */
@@ -262,86 +262,100 @@ uint8_t ASCII_8X16[ASCII_FONT_COUNT * ASCII_FONT_HEIGHT] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-
-#define FB_WIDTH 1920
-#define FB_HEIGHT 1080
-#define FB_PIXEL_BASE 0xffffffffffa11400ULL
-#define FB_CONTROL_BASE 0xffffffffffa01400ULL
+#define __ZENITH_LIBC_FB_WIDTH 1920
+#define __ZENITH_LIBC_FB_HEIGHT 1080
+#define __ZENITH_LIBC_FB_PIXEL_BASE 0xffffffffffa11400ULL
+#define __ZENITH_LIBC_FB_CONTROL_BASE 0xffffffffffa01400ULL
 
 void enable_framebuffer() {
-    long *control = FB_CONTROL_BASE;
+    long *control = __ZENITH_LIBC_FB_CONTROL_BASE;
     *control = 2L << 32;
 }
 
-void set_framebuffer_byte(long byte_offset) {
+void __zenith_libc_set_framebuffer_byte(long byte_offset) {
     long byte_in_word = byte_offset % 8;
     long aligned_offset = byte_offset - byte_in_word;
     long shift = byte_in_word * 8;
     long mask = 255L << shift;
 
-    long *word = FB_PIXEL_BASE + aligned_offset;
+    long *word = __ZENITH_LIBC_FB_PIXEL_BASE + aligned_offset;
     *word = *word | mask;
 }
 
-void put_white_pixel(int x, int y) {
+void __zenith_libc_put_white_pixel(int x, int y) {
     if (x < 0) return;
-    if ((x - FB_WIDTH) >= 0) return;
+    if ((x - __ZENITH_LIBC_FB_WIDTH) >= 0) return;
     if (y < 0) return;
-    if ((y - FB_HEIGHT) >= 0) return;
+    if ((y - __ZENITH_LIBC_FB_HEIGHT) >= 0) return;
 
-    long pixel_offset = ((y * FB_WIDTH) + x) * 3;
+    long pixel_offset = ((y * __ZENITH_LIBC_FB_WIDTH) + x) * 3;
 
-    set_framebuffer_byte(pixel_offset + 0);
-    set_framebuffer_byte(pixel_offset + 1);
-    set_framebuffer_byte(pixel_offset + 2);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 0);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 1);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 2);
 }
 
-int ascii_font_pixel(unsigned char c, int x, int y) {
+int __zenith_libc_ascii_font_pixel(unsigned char c, int x, int y) {
     unsigned char row;
 
-    if (c >= ASCII_FONT_COUNT) return 0;
+    if (c >= __ZENITH_LIBC_ASCII_FONT_COUNT) return 0;
     if (x < 0) return 0;
-    if (x >= ASCII_FONT_WIDTH) return 0;
+    if (x >= __ZENITH_LIBC_ASCII_FONT_WIDTH) return 0;
     if (y < 0) return 0;
-    if (y >= ASCII_FONT_HEIGHT) return 0;
+    if (y >= __ZENITH_LIBC_ASCII_FONT_HEIGHT) return 0;
 
-    row = ASCII_8X16[(c * ASCII_FONT_HEIGHT) + y];
+    row = __ZENITH_LIBC_ASCII_BITMAP[(c * __ZENITH_LIBC_ASCII_FONT_HEIGHT) + y];
 
     return (row >> (7 - x)) & 1;
 }
 
-void draw_ascii_char(int x, int y, char c) {
-    if (c >= ASCII_FONT_COUNT) {
+uint16_t __zenith_libc_cursor_x = 0;
+uint16_t __zenith_libc_cursor_y = 0;
+
+void __zenith_libc_draw_ascii_char(char c) {
+    if (c >= __ZENITH_LIBC_ASCII_FONT_COUNT) {
         c = '?';
     }
 
-    for (int gy = 0; gy < ASCII_FONT_HEIGHT; gy++) {
-        for (int gx = 0; gx < ASCII_FONT_WIDTH; gx++) {
-            if (ascii_font_pixel(c, gx, gy)) {
-                put_white_pixel(x + gx, y + gy);
+    for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
+        for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
+            if (__zenith_libc_ascii_font_pixel(c, gx, gy)) {
+                __zenith_libc_put_white_pixel(__zenith_libc_cursor_x + gx, __zenith_libc_cursor_y + gy);
             }
         }
     }
 }
 
+/// @brief print characters to screen
+/// @param word string to print
+///
+/// This `printf` works differently than the regular libc printf. Generally, libc's printf buffers text in memory,
+/// and makes a write system call when flushed. This printf draws directly and instantly to the framebuffer. It is
+/// significantly simpler than setting up system calls for printing, but significantly slower than modern machines as
+/// it must slowly query and copy the relevant bitmap to the framebuffer. I have kept it this way for simplicity, but
+/// in the future, it may be worth implementing a proper system call for writing to screen.
+///
+/// As a result of this design, users must always call [`enable_framebuffer`] before printing.
 void printf(char *word) {
-    int x = 0;
-    int y = FB_HEIGHT - ASCII_FONT_HEIGHT;
-
     while (*word) {
-        draw_ascii_char(x, y, *word);
-        x = x + ASCII_FONT_WIDTH;
+        if (*word == '\n') {
+            __zenith_libc_cursor_x = 0;
+            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 3;
+        } else {
+            __zenith_libc_draw_ascii_char(*word);
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+        }
         word++;
     }
 }
 
 // void draw_ascii_char_scaled(int x, int y, char c, int scale) {
-//     for (int gy = 0; gy < ASCII_FONT_HEIGHT; gy++) {
-//         for (int gx = 0; gx < ASCII_FONT_WIDTH; gx++) {
-//             if (ascii_font_pixel(c, gx, gy)) {
+//     for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
+//         for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
+//             if (__zenith_libc_ascii_font_pixel(c, gx, gy)) {
 //                 for (int sy = 0; sy < scale; sy++) {
 //                     for (int sx = 0; sx < scale; sx++) {
-//                         put_white_pixel(x + gx * scale + sx, y + gy * scale + sy);
+//                         __zenith_libc_put_white_pixel(x + gx * scale + sx, y + gy * scale + sy);
 //                     }
 //                 }
 //             }

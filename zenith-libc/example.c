@@ -6,37 +6,37 @@ int relu(float x) {
     return (x > 0.0f) ? x : 0.0f;
 }
 
-#define FB_WIDTH 1920
-#define FB_HEIGHT 1080
-#define FB_PIXEL_BASE 0xffffffffffa11400ULL
-#define FB_CONTROL_BASE 0xffffffffffa01400ULL
+#define __ZENITH_LIBC_FB_WIDTH 1920
+#define __ZENITH_LIBC_FB_HEIGHT 1080
+#define __ZENITH_LIBC_FB_PIXEL_BASE 0xffffffffffa11400ULL
+#define __ZENITH_LIBC_FB_CONTROL_BASE 0xffffffffffa01400ULL
 
 void enable_framebuffer() {
-    long *control = FB_CONTROL_BASE;
+    long *control = __ZENITH_LIBC_FB_CONTROL_BASE;
     *control = 2L << 32;
 }
 
-void set_framebuffer_byte(long byte_offset) {
+void __zenith_libc_set_framebuffer_byte(long byte_offset) {
     long byte_in_word = byte_offset % 8;
     long aligned_offset = byte_offset - byte_in_word;
     long shift = byte_in_word * 8;
     long mask = 255L << shift;
 
-    long *word = FB_PIXEL_BASE + aligned_offset;
+    long *word = __ZENITH_LIBC_FB_PIXEL_BASE + aligned_offset;
     *word = *word | mask;
 }
 
-void put_white_pixel(int x, int y) {
+void __zenith_libc_put_white_pixel(int x, int y) {
     if (x < 0) return;
-    if ((x - FB_WIDTH) >= 0) return;
+    if ((x - __ZENITH_LIBC_FB_WIDTH) >= 0) return;
     if (y < 0) return;
-    if ((y - FB_HEIGHT) >= 0) return;
+    if ((y - __ZENITH_LIBC_FB_HEIGHT) >= 0) return;
 
-    long pixel_offset = ((y * FB_WIDTH) + x) * 3;
+    long pixel_offset = ((y * __ZENITH_LIBC_FB_WIDTH) + x) * 3;
 
-    set_framebuffer_byte(pixel_offset + 0);
-    set_framebuffer_byte(pixel_offset + 1);
-    set_framebuffer_byte(pixel_offset + 2);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 0);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 1);
+    __zenith_libc_set_framebuffer_byte(pixel_offset + 2);
 }
 
 void draw_white_line(int x0, int y0, int x1, int y1) {
@@ -55,7 +55,7 @@ void draw_white_line(int x0, int y0, int x1, int y1) {
     int error = dx - dy;
 
     while (1) {
-        put_white_pixel(x0, y0);
+        __zenith_libc_put_white_pixel(x0, y0);
 
         if ((x0 - x1) == 0) {
             if ((y0 - y1) == 0) return;
