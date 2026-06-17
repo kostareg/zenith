@@ -271,30 +271,11 @@ const cLikeLanguage = StreamLanguage.define<CStreamState>({
     },
 });
 
-const DEFAULT_ASSEMBLY = `.main
-  # a0 = previous fibonacci number
-  # a1 = current fibonacci number
-  # a4 = latest fibonacci number
-  # a2/a3 = inner loop counter and limit
-  # a5/a6 = outer loop counter and limit
-  addi a0, zero, 0
-  addi a1, zero, 1
-  addi a3, zero, 16383
-  addi a6, zero, 16383
-  addi a5, zero, 0
+const DEFAULT_ZENITH_C = `#include <stdio.h>
 
-outer: addi a2, zero, 0
-inner: add a4, a0, a1
-  add a0, a1, zero
-  add a1, a4, zero
-  addi a2, a2, 1
-  blt a2, a3, inner
-  addi a5, a5, 1
-  blt a5, a6, outer
-`;
-
-const DEFAULT_ZENITH_C = `int main() {
-    return 7;
+int main() {
+    printf("hello world!");
+    return 0;
 }
 `;
 
@@ -427,6 +408,67 @@ function resolveNextInstructionIndex(instruction: number, currentIndex: number, 
 
 function unknownErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
+}
+
+const SYSTEM_INCLUDE_BASE_URL = "/zenith-libc/";
+const systemIncludeCache = new Map<string, Promise<string>>();
+
+function systemIncludeUrl(includePath: string) {
+    return `${SYSTEM_INCLUDE_BASE_URL}${includePath.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function validateSystemIncludePath(includePath: string) {
+    if (!/^[A-Za-z0-9_./-]+\.h$/.test(includePath) || includePath.startsWith("/") || includePath.includes("..")) {
+        throw new Error(`#include <${includePath}> is not a valid Zenith libc header path`);
+    }
+}
+
+function fetchSystemInclude(includePath: string) {
+    validateSystemIncludePath(includePath);
+
+    const cached = systemIncludeCache.get(includePath);
+    if (cached) {
+        return cached;
+    }
+
+    const request = fetch(systemIncludeUrl(includePath)).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(`failed to load #include <${includePath}> from ${systemIncludeUrl(includePath)}`);
+        }
+        if (response.headers.get("content-type")?.includes("text/html")) {
+            throw new Error(`#include <${includePath}> was not found in ${SYSTEM_INCLUDE_BASE_URL}`);
+        }
+
+        return response.text();
+    });
+    systemIncludeCache.set(includePath, request);
+    return request;
+}
+
+async function preprocessZenithCSystemIncludes(source: string) {
+    const includePattern = /^([ \t]*)#[ \t]*include[ \t]*<([^>\r\n]+)>[ \t]*(?:(?:\/\/.*)|(?:\/\*.*\*\/)[ \t]*)?$/gm;
+    let output = "";
+    let lastIndex = 0;
+    let match: RegExpExecArray | null = includePattern.exec(source);
+
+    while (match) {
+        const indentation = match[1] ?? "";
+        const includePath = (match[2] ?? "").trim();
+        const includedSource = await fetchSystemInclude(includePath);
+
+        output += source.slice(lastIndex, match.index);
+        output += `${indentation}/* begin #include <${includePath}> */\n`;
+        output += includedSource;
+        if (!includedSource.endsWith("\n")) {
+            output += "\n";
+        }
+        output += `${indentation}/* end #include <${includePath}> */`;
+        lastIndex = includePattern.lastIndex;
+
+        match = includePattern.exec(source);
+    }
+
+    return output + source.slice(lastIndex);
 }
 
 function appendInstructionFrameSample(history: Array<number>, sample: number) {
@@ -573,7 +615,7 @@ export function App() {
     const compiler = useZenithCompiler();
     const [activeTab, setActiveTab] = useState<EditorTab>("zenith-c");
     const [zenithCSource, setZenithCSource] = useState(DEFAULT_ZENITH_C);
-    const [assemblySource, setAssemblySource] = useState(DEFAULT_ASSEMBLY);
+    const [assemblySource, setAssemblySource] = useState("");
     const [machineCode, setMachineCode] = useState("");
     const [compilerError, setCompilerError] = useState<string | null>(null);
     const [assemblyError, setAssemblyError] = useState<string | null>(null);
@@ -856,7 +898,7 @@ export function App() {
         }
     }
 
-    function compileAndRunZenithC(source: string, showMachineCode = false) {
+    async function compileAndRunZenithC(source: string, showMachineCode = false) {
         setZenithCSource(source);
         setIsRunning(false);
 
@@ -866,7 +908,8 @@ export function App() {
         }
 
         try {
-            const compiledAssembly = compiler.compile(source);
+            const preprocessedSource = await preprocessZenithCSystemIncludes(source);
+            const compiledAssembly = compiler.compile(preprocessedSource);
             setAssemblySource(compiledAssembly);
             const compiledMachineCode = assembleProgram(assembler, compiledAssembly);
             const compiledParseResult = loadMachineCode(compiledMachineCode, true);
@@ -952,7 +995,7 @@ export function App() {
                                 {activeTab === "zenith-c" ? (
                                     <Button
                                         disabled={!compiler || !assembler}
-                                        onClick={() => compileAndRunZenithC(zenithCSource, true)}
+                                        onClick={() => void compileAndRunZenithC(zenithCSource, true)}
                                         title="Compile and load Zenith C"
                                         variant="outline"
                                     >

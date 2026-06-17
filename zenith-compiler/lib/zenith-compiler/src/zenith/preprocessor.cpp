@@ -16,6 +16,7 @@ namespace zenith::compiler {
 namespace {
 
 constexpr std::string_view include_base_env = "ZENITH_COMPILER_INCLUDE_BASE";
+constexpr std::string_view system_include_base_env = "ZENITH_COMPILER_SYSTEM_INCLUDE_BASE";
 
 [[nodiscard]] bool is_eof(const Token& token) noexcept {
     return token.type == TokenType::EndOfFile;
@@ -73,18 +74,18 @@ void append_expanded_token(
     active_macros.erase(token.lexeme);
 }
 
-[[nodiscard]] std::filesystem::path include_path(std::string include_name, const Token& token) {
+[[nodiscard]] std::filesystem::path include_path(std::string include_name, const Token& token, std::string_view base_env) {
     std::filesystem::path relative(std::move(include_name));
     if (relative.empty()) {
         fail_at(token, "#include path cannot be empty");
     }
     if (relative.is_absolute()) {
-        fail_at(token, "#include path must be relative to ZENITH_COMPILER_INCLUDE_BASE");
+        fail_at(token, "#include path must be relative to " + std::string(base_env));
     }
 
-    const char* base = std::getenv(include_base_env.data());
+    const char* base = std::getenv(base_env.data());
     if (base == nullptr || *base == '\0') {
-        fail_at(token, "ZENITH_COMPILER_INCLUDE_BASE is not set");
+        fail_at(token, std::string(base_env) + " is not set");
     }
 
     return std::filesystem::path(base) / relative;
@@ -96,7 +97,7 @@ void append_expanded_token(
     }
 
     if (tokens.size() == 1 && tokens.front().type == TokenType::StringLiteral) {
-        return include_path(tokens.front().text, tokens.front());
+        return include_path(tokens.front().text, tokens.front(), include_base_env);
     }
 
     if (tokens.size() >= 3 && tokens.front().type == TokenType::Less && tokens.back().type == TokenType::Greater) {
@@ -104,7 +105,7 @@ void append_expanded_token(
         for (std::size_t i = 1; i + 1 < tokens.size(); ++i) {
             include_name += tokens[i].lexeme;
         }
-        return include_path(std::move(include_name), tokens.front());
+        return include_path(std::move(include_name), tokens.front(), system_include_base_env);
     }
 
     fail_at(tokens.front(), "#include expects a string literal or angle-bracket path");

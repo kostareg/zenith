@@ -40,11 +40,27 @@ void set_include_base(const std::filesystem::path& path) {
 #endif
 }
 
+void set_system_include_base(const std::filesystem::path& path) {
+#ifdef _WIN32
+    _putenv_s("ZENITH_COMPILER_SYSTEM_INCLUDE_BASE", path.string().c_str());
+#else
+    setenv("ZENITH_COMPILER_SYSTEM_INCLUDE_BASE", path.string().c_str(), 1);
+#endif
+}
+
 void unset_include_base() {
 #ifdef _WIN32
     _putenv_s("ZENITH_COMPILER_INCLUDE_BASE", "");
 #else
     unsetenv("ZENITH_COMPILER_INCLUDE_BASE");
+#endif
+}
+
+void unset_system_include_base() {
+#ifdef _WIN32
+    _putenv_s("ZENITH_COMPILER_SYSTEM_INCLUDE_BASE", "");
+#else
+    unsetenv("ZENITH_COMPILER_SYSTEM_INCLUDE_BASE");
 #endif
 }
 
@@ -87,21 +103,53 @@ TEST(Preprocessor, IncludesLexedFilesFromEnvironmentBase) {
 }
 
 TEST(Preprocessor, SupportsMacroExpandedAngleIncludes) {
-    const std::filesystem::path include_base =
+    const std::filesystem::path system_include_base =
         std::filesystem::temp_directory_path() / "zenith-compiler-preprocessor-angle-test";
-    std::filesystem::create_directories(include_base);
+    std::filesystem::create_directories(system_include_base);
 
     {
-        std::ofstream include_file(include_base / "constants.zh");
+        std::ofstream include_file(system_include_base / "constants.zh");
         include_file << "int angle = 7;\n";
     }
 
-    set_include_base(include_base);
+    set_system_include_base(system_include_base);
     const std::vector<Token> tokens = preprocess_source("#define HEADER <constants.zh>\n#include HEADER");
-    unset_include_base();
+    unset_system_include_base();
 
     EXPECT_EQ(token_lexemes_without_eof(tokens), (std::vector<std::string>{"int", "angle", "=", "7", ";"}));
 
+    std::filesystem::remove_all(system_include_base);
+}
+
+TEST(Preprocessor, ReadsQuotedAndAngleIncludesFromSeparateEnvironmentBases) {
+    const std::filesystem::path include_base =
+        std::filesystem::temp_directory_path() / "zenith-compiler-preprocessor-quoted-base-test";
+    const std::filesystem::path system_include_base =
+        std::filesystem::temp_directory_path() / "zenith-compiler-preprocessor-system-base-test";
+    std::filesystem::create_directories(include_base);
+    std::filesystem::create_directories(system_include_base);
+
+    {
+        std::ofstream include_file(include_base / "constants.zh");
+        include_file << "int quoted = 1;\n";
+    }
+    {
+        std::ofstream include_file(system_include_base / "constants.zh");
+        include_file << "int angle = 2;\n";
+    }
+
+    set_include_base(include_base);
+    set_system_include_base(system_include_base);
+    const std::vector<Token> tokens = preprocess_source("#include \"constants.zh\"\n#include <constants.zh>");
+    unset_system_include_base();
+    unset_include_base();
+
+    EXPECT_EQ(
+        token_lexemes_without_eof(tokens),
+        (std::vector<std::string>{"int", "quoted", "=", "1", ";", "int", "angle", "=", "2", ";"})
+    );
+
+    std::filesystem::remove_all(system_include_base);
     std::filesystem::remove_all(include_base);
 }
 
@@ -109,6 +157,12 @@ TEST(Preprocessor, RequiresIncludeBaseEnvironmentVariable) {
     unset_include_base();
 
     EXPECT_THROW(preprocess_source("#include \"constants.zh\""), std::runtime_error);
+}
+
+TEST(Preprocessor, RequiresSystemIncludeBaseEnvironmentVariableForAngleIncludes) {
+    unset_system_include_base();
+
+    EXPECT_THROW(preprocess_source("#include <constants.zh>"), std::runtime_error);
 }
 
 TEST(Preprocessor, RejectsFunctionLikeDefines) {

@@ -324,7 +324,7 @@ void draw_ascii_char(int x, int y, char c) {
     }
 }
 
-void draw_ascii_word_bottom_left(char *word) {
+void printf(char *word) {
     int x = 0;
     int y = FB_HEIGHT - ASCII_FONT_HEIGHT;
 
@@ -335,24 +335,16 @@ void draw_ascii_word_bottom_left(char *word) {
     }
 }
 
-void draw_ascii_char_scaled(int x, int y, char c, int scale) {
-    for (int gy = 0; gy < ASCII_FONT_HEIGHT; gy++) {
-        for (int gx = 0; gx < ASCII_FONT_WIDTH; gx++) {
-            if (ascii_font_pixel(c, gx, gy)) {
-                for (int sy = 0; sy < scale; sy++) {
-                    for (int sx = 0; sx < scale; sx++) {
-                        put_white_pixel(x + gx * scale + sx, y + gy * scale + sy);
-                    }
-                }
-            }
-        }
-    }
-}
-
-int main() {
-    enable_framebuffer();
-
-    draw_ascii_word_bottom_left("ZENITH - LOREM IPSUM DOLOR SIT AMET...");
-
-    return 0;
-}
+// void draw_ascii_char_scaled(int x, int y, char c, int scale) {
+//     for (int gy = 0; gy < ASCII_FONT_HEIGHT; gy++) {
+//         for (int gx = 0; gx < ASCII_FONT_WIDTH; gx++) {
+//             if (ascii_font_pixel(c, gx, gy)) {
+//                 for (int sy = 0; sy < scale; sy++) {
+//                     for (int sx = 0; sx < scale; sx++) {
+//                         put_white_pixel(x + gx * scale + sx, y + gy * scale + sy);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
