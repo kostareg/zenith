@@ -394,13 +394,20 @@ const cLikeLanguage = StreamLanguage.define<CStreamState>({
 });
 
 const DEFAULT_ZENITH_C = `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main() {
-    int ints[1] = {9};
-    printf_ints("%d hello world!", ints);
+    char* a = "hello";
+    char* b = "helo";
+    if (strcmp(a, b)) {
+        printf("yay");
+    }
+
+    int ints[2] = {rand(), 21};
+    printf_ints("%d %dhello world!", ints);
     return 0;
-}
-`;
+}`;
 
 type EditorTab = "zenith-c" | "assembly" | "machine-code";
 
