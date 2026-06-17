@@ -352,9 +352,7 @@ void draw_ascii_char_scaled(int x, int y, char c, int scale) {
 int main() {
     enable_framebuffer();
 
-    char z[2] = {'Z', 0};
-    // draw_ascii_word_bottom_left(&z);
-    draw_ascii_char_scaled(100, 100, 'Z', 10);
+    draw_ascii_word_bottom_left("ZENITH - LOREM IPSUM DOLOR SIT AMET...");
 
     return 0;
 }

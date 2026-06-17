@@ -1,7 +1,7 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
-import { Hammer, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
+import { Hammer, Maximize2, Pause, RotateCcw, SkipForward, StepForward, X } from "lucide-react";
 import { EditorView, Decoration } from "@codemirror/view";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -21,6 +21,73 @@ const INSTRUCTION_FRAME_HISTORY_LIMIT = 90;
 const INSTRUCTION_CHART_WIDTH = 280;
 const INSTRUCTION_CHART_HEIGHT = 72;
 const INSTRUCTION_CHART_PADDING = 6;
+
+function paintFramebufferPreview(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.imageSmoothingEnabled = false;
+    const imageData = context.createImageData(FRAMEBUFFER_PREVIEW_WIDTH, FRAMEBUFFER_PREVIEW_HEIGHT);
+
+    if (framebuffer) {
+        for (let y = 0; y < FRAMEBUFFER_PREVIEW_HEIGHT; y += 1) {
+            const sourceYStart = Math.floor((y * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
+            const sourceYEnd = Math.ceil(((y + 1) * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
+            for (let x = 0; x < FRAMEBUFFER_PREVIEW_WIDTH; x += 1) {
+                const destinationOffset = (y * FRAMEBUFFER_PREVIEW_WIDTH + x) * 4;
+                const sourceXStart = Math.floor((x * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
+                const sourceXEnd = Math.ceil(((x + 1) * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
+
+                let red = 0;
+                let green = 0;
+                let blue = 0;
+                for (let sourceY = sourceYStart; sourceY < sourceYEnd; sourceY += 1) {
+                    for (let sourceX = sourceXStart; sourceX < sourceXEnd; sourceX += 1) {
+                        const sourceOffset = (sourceY * FRAMEBUFFER_WIDTH + sourceX) * 3;
+                        red = Math.max(red, framebuffer[sourceOffset] ?? 0);
+                        green = Math.max(green, framebuffer[sourceOffset + 1] ?? 0);
+                        blue = Math.max(blue, framebuffer[sourceOffset + 2] ?? 0);
+                    }
+                }
+
+                imageData.data[destinationOffset] = red;
+                imageData.data[destinationOffset + 1] = green;
+                imageData.data[destinationOffset + 2] = blue;
+                imageData.data[destinationOffset + 3] = 255;
+            }
+        }
+    } else {
+        for (let i = 3; i < imageData.data.length; i += 4) {
+            imageData.data[i] = 255;
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
+}
+
+function paintFramebufferFullSize(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.imageSmoothingEnabled = false;
+    const imageData = context.createImageData(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+
+    if (framebuffer) {
+        for (let sourceOffset = 0, destinationOffset = 0; sourceOffset < framebuffer.length; sourceOffset += 3) {
+            imageData.data[destinationOffset] = framebuffer[sourceOffset] ?? 0;
+            imageData.data[destinationOffset + 1] = framebuffer[sourceOffset + 1] ?? 0;
+            imageData.data[destinationOffset + 2] = framebuffer[sourceOffset + 2] ?? 0;
+            imageData.data[destinationOffset + 3] = 255;
+            destinationOffset += 4;
+        }
+    } else {
+        for (let i = 3; i < imageData.data.length; i += 4) {
+            imageData.data[i] = 255;
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
+}
 
 const REGISTER_NAMES = [
     "zero",
@@ -366,7 +433,10 @@ function appendInstructionFrameSample(history: Array<number>, sample: number) {
     return [...history.slice(-(INSTRUCTION_FRAME_HISTORY_LIMIT - 1)), sample];
 }
 
-function assembleProgram(assembler: NonNullable<ReturnType<typeof useZenithAssembler>>, source: string): AssembledProgram {
+function assembleProgram(
+    assembler: NonNullable<ReturnType<typeof useZenithAssembler>>,
+    source: string
+): AssembledProgram {
     const maybeProgramAssembler = assembler as typeof assembler & {
         assembleProgram?: (source: string) => AssembledProgram;
     };
@@ -514,7 +584,9 @@ export function App() {
     const [isRunning, setIsRunning] = useState(false);
     const [lastMessage, setLastMessage] = useState("");
     const framebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const fullscreenFramebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [framebufferRevision, setFramebufferRevision] = useState(0);
+    const [fullscreenFramebufferIsOpen, setFullscreenFramebufferIsOpen] = useState(false);
     const [instructionsPerFrame, setInstructionsPerFrame] = useState<Array<number>>([]);
 
     const parseResult = useMemo(() => parseProgram(machineCode), [machineCode]);
@@ -593,48 +665,30 @@ export function App() {
         const canvas = framebufferCanvasRef.current;
         if (!canvas) return;
 
-        const context = canvas.getContext("2d");
-        if (!context) return;
-
-        context.imageSmoothingEnabled = false;
-        const imageData = context.createImageData(FRAMEBUFFER_PREVIEW_WIDTH, FRAMEBUFFER_PREVIEW_HEIGHT);
-
-        if (emulator) {
-            const framebuffer = emulator.getFramebuffer();
-            for (let y = 0; y < FRAMEBUFFER_PREVIEW_HEIGHT; y += 1) {
-                const sourceYStart = Math.floor((y * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
-                const sourceYEnd = Math.ceil(((y + 1) * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
-                for (let x = 0; x < FRAMEBUFFER_PREVIEW_WIDTH; x += 1) {
-                    const destinationOffset = (y * FRAMEBUFFER_PREVIEW_WIDTH + x) * 4;
-                    const sourceXStart = Math.floor((x * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
-                    const sourceXEnd = Math.ceil(((x + 1) * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
-
-                    let red = 0;
-                    let green = 0;
-                    let blue = 0;
-                    for (let sourceY = sourceYStart; sourceY < sourceYEnd; sourceY += 1) {
-                        for (let sourceX = sourceXStart; sourceX < sourceXEnd; sourceX += 1) {
-                            const sourceOffset = (sourceY * FRAMEBUFFER_WIDTH + sourceX) * 3;
-                            red = Math.max(red, framebuffer[sourceOffset] ?? 0);
-                            green = Math.max(green, framebuffer[sourceOffset + 1] ?? 0);
-                            blue = Math.max(blue, framebuffer[sourceOffset + 2] ?? 0);
-                        }
-                    }
-
-                    imageData.data[destinationOffset] = red;
-                    imageData.data[destinationOffset + 1] = green;
-                    imageData.data[destinationOffset + 2] = blue;
-                    imageData.data[destinationOffset + 3] = 255;
-                }
-            }
-        } else {
-            for (let i = 3; i < imageData.data.length; i += 4) {
-                imageData.data[i] = 255;
-            }
-        }
-
-        context.putImageData(imageData, 0, 0);
+        paintFramebufferPreview(canvas, emulator?.getFramebuffer() ?? null);
     }, [emulator, framebufferRevision]);
+
+    useEffect(() => {
+        if (!fullscreenFramebufferIsOpen) return;
+
+        const canvas = fullscreenFramebufferCanvasRef.current;
+        if (!canvas) return;
+
+        paintFramebufferFullSize(canvas, emulator?.getFramebuffer() ?? null);
+    }, [emulator, framebufferRevision, fullscreenFramebufferIsOpen]);
+
+    useEffect(() => {
+        if (!fullscreenFramebufferIsOpen) return;
+
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setFullscreenFramebufferIsOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", closeOnEscape);
+        return () => window.removeEventListener("keydown", closeOnEscape);
+    }, [fullscreenFramebufferIsOpen]);
 
     useEffect(() => {
         if (!isRunning || !emulator || parseResult.errors.length > 0) {
@@ -846,253 +900,316 @@ export function App() {
     }
 
     return (
-        <main className="grid h-svh grid-cols-[18rem_minmax(0,1fr)_22rem] overflow-hidden bg-background text-foreground">
-            <aside className="flex min-h-0 flex-col border-r bg-muted/30">
-                <header className="border-b px-4 py-3">
-                    <h1 className="text-sm font-semibold">Zenith Web</h1>
-                    <p className="text-xs text-muted-foreground">CPU registers</p>
-                </header>
-                <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
-                    <div className="grid gap-1">
-                        {registers.map((value, index) => (
-                            <div
-                                className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-baseline gap-2 rounded-md px-2 py-1 font-mono text-xs hover:bg-muted"
-                                key={index}
-                            >
-                                <span className="font-semibold text-foreground">
-                                    {REGISTER_NAMES[index]}
-                                    <span className="ml-1 text-muted-foreground">z{index} </span>
-                                </span>
-                                <span className="truncate text-right text-muted-foreground" title={formatHex(value)}>
-                                    {formatHex(value)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </aside>
-
-            <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_15rem]">
-                <Tabs
-                    className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0"
-                    onValueChange={(value) => selectTab(value as EditorTab)}
-                    value={activeTab}
-                >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
-                        <div className="min-w-0">
-                            <TabsList className="mb-2">
-                                {EDITOR_TABS.map((tab) => (
-                                    <TabsTrigger key={tab.id} value={tab.id}>
-                                        {tab.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                            <h2 className="text-sm font-semibold">{activeTabMeta.title}</h2>
-                            <p className="text-xs text-muted-foreground">{activeTabMeta.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {activeTab === "zenith-c" ? (
-                                <Button
-                                    disabled={!compiler || !assembler}
-                                    onClick={() => compileAndRunZenithC(zenithCSource, true)}
-                                    title="Compile and load Zenith C"
-                                    variant="outline"
+        <>
+            <main className="grid h-svh grid-cols-[18rem_minmax(0,1fr)_22rem] overflow-hidden bg-background text-foreground">
+                <aside className="flex min-h-0 flex-col border-r bg-muted/30">
+                    <header className="border-b px-4 py-3">
+                        <h1 className="text-sm font-semibold">Zenith Web</h1>
+                        <p className="text-xs text-muted-foreground">CPU registers</p>
+                    </header>
+                    <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
+                        <div className="grid gap-1">
+                            {registers.map((value, index) => (
+                                <div
+                                    className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-baseline gap-2 rounded-md px-2 py-1 font-mono text-xs hover:bg-muted"
+                                    key={index}
                                 >
-                                    <Hammer />
-                                    Compile & Load
-                                </Button>
-                            ) : null}
-                            {activeTab === "assembly" ? (
-                                <Button
-                                    disabled={!assembler}
-                                    onClick={compileAndLoadAssembly}
-                                    title="Compile and load assembly"
-                                    variant="outline"
-                                >
-                                    <Hammer />
-                                    Compile & Load
-                                </Button>
-                            ) : null}
-                            <Button
-                                aria-label="Reset program"
-                                disabled={!emulator || !activeTabCanUseLoadedProgram}
-                                onClick={resetProgram}
-                                size="icon"
-                                title="Reset program"
-                                variant="outline"
-                            >
-                                <RotateCcw />
-                            </Button>
-                            <Button
-                                aria-label="Step instruction"
-                                disabled={!canUseStepControl}
-                                onClick={stepProgram}
-                                size="icon"
-                                title="Step instruction"
-                                variant="secondary"
-                            >
-                                <StepForward />
-                            </Button>
-                            <Button
-                                aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
-                                disabled={!canUseRunControl}
-                                onClick={toggleRunProgram}
-                                size="icon"
-                                title={isRunning ? "Pause continuous execution" : "Run continuously"}
-                            >
-                                {isRunning ? <Pause /> : <SkipForward />}
-                            </Button>
+                                    <span className="font-semibold text-foreground">
+                                        {REGISTER_NAMES[index]}
+                                        <span className="ml-1 text-muted-foreground">z{index} </span>
+                                    </span>
+                                    <span
+                                        className="truncate text-right text-muted-foreground"
+                                        title={formatHex(value)}
+                                    >
+                                        {formatHex(value)}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="zenith-c">
-                        <CodeMirror
-                            basicSetup={{
-                                autocompletion: false,
-                                bracketMatching: false,
-                                foldGutter: false,
-                                highlightSelectionMatches: false,
-                            }}
-                            extensions={cEditorExtensions}
-                            height="100%"
-                            onChange={(value) => {
-                                setZenithCSource(value);
-                                setCompilerError(null);
-                                setAssemblyError(null);
-                                setAssemblyIsLoaded(false);
-                                setIsRunning(false);
-                                setInstructionsPerFrame([]);
-                                setLastMessage("Zenith C changed. Compile and load before running those changes.");
-                            }}
-                            value={zenithCSource}
-                        />
-                    </TabsContent>
-                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="assembly">
-                        <CodeMirror
-                            basicSetup={{
-                                autocompletion: false,
-                                bracketMatching: false,
-                                foldGutter: false,
-                                highlightSelectionMatches: false,
-                            }}
-                            extensions={assemblyEditorExtensions}
-                            height="100%"
-                            onChange={(value) => {
-                                setAssemblySource(value);
-                                setCompilerError(null);
-                                setAssemblyError(null);
-                                setAssemblyIsLoaded(false);
-                                setIsRunning(false);
-                                setInstructionsPerFrame([]);
-                                setLastMessage("Assembly changed. Compile and load before running those changes.");
-                            }}
-                            value={assemblySource}
-                        />
-                    </TabsContent>
-                    <TabsContent className="m-0 min-h-0 overflow-hidden" value="machine-code">
-                        <CodeMirror
-                            basicSetup={{
-                                autocompletion: false,
-                                bracketMatching: false,
-                                foldGutter: false,
-                                highlightSelectionMatches: false,
-                            }}
-                            extensions={machineCodeEditorExtensions}
-                            height="100%"
-                            onChange={(value) => {
-                                setIsRunning(false);
-                                setMachineCode(value);
-                                setCompilerError(null);
-                                setAssemblyError(null);
-                                setAssemblyIsLoaded(false);
-                                setInstructionIndex(0);
-                                setInstructionsPerFrame([]);
-                                setLastMessage("Machine code changed. Reset or step from the first parsed line.");
-                            }}
-                            value={machineCode}
-                        />
-                    </TabsContent>
-                </Tabs>
+                </aside>
 
-                <footer className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-t bg-muted/20">
-                    <div className="flex items-center justify-between border-b px-4 py-2">
-                        <h2 className="text-sm font-semibold">Output</h2>
-                        <span className="font-mono text-xs text-muted-foreground">
-                            {parseResult.instructions.length} instruction
-                            {parseResult.instructions.length === 1 ? "" : "s"} loaded
-                        </span>
-                    </div>
-                    <div className="min-h-0 overflow-auto p-4 font-mono text-xs leading-6">
-                        {!emulator ? <p>Loading emulator...</p> : null}
-                        {activeTab === "zenith-c" && !compiler ? <p>Loading compiler...</p> : null}
-                        {activeTab === "zenith-c" && !assembler ? <p>Loading assembler...</p> : null}
-                        {activeTab === "assembly" && !assembler ? <p>Loading assembler...</p> : null}
-                        {compilerError ? (
-                            <div className="text-destructive">
-                                <p>{compilerError}</p>
+                <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_15rem]">
+                    <Tabs
+                        className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0"
+                        onValueChange={(value) => selectTab(value as EditorTab)}
+                        value={activeTab}
+                    >
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
+                            <div className="min-w-0">
+                                <TabsList className="mb-2">
+                                    {EDITOR_TABS.map((tab) => (
+                                        <TabsTrigger key={tab.id} value={tab.id}>
+                                            {tab.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                <h2 className="text-sm font-semibold">{activeTabMeta.title}</h2>
+                                <p className="text-xs text-muted-foreground">{activeTabMeta.description}</p>
                             </div>
-                        ) : assemblyError ? (
-                            <div className="text-destructive">
-                                <p>{assemblyError}</p>
-                            </div>
-                        ) : parseResult.errors.length > 0 ? (
-                            <div className="text-destructive">
-                                {parseResult.errors.map((parseError) => (
-                                    <p key={parseError}>{parseError}</p>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                <p>{lastMessage}</p>
-                                <p>
-                                    next:{" "}
-                                    {activeInstruction
-                                        ? `line ${activeInstruction.lineNumber} (${activeInstruction.text})`
-                                        : "outside parsed program"}
-                                </p>
-                                {activeTab === "assembly" ? (
-                                    <p>{assemblyIsLoaded ? "assembly output is loaded" : "assembly is not loaded"}</p>
+                            <div className="flex items-center gap-2">
+                                {activeTab === "zenith-c" ? (
+                                    <Button
+                                        disabled={!compiler || !assembler}
+                                        onClick={() => compileAndRunZenithC(zenithCSource, true)}
+                                        title="Compile and load Zenith C"
+                                        variant="outline"
+                                    >
+                                        <Hammer />
+                                        Compile & Load
+                                    </Button>
                                 ) : null}
-                            </>
-                        )}
-                    </div>
-                </footer>
-            </section>
+                                {activeTab === "assembly" ? (
+                                    <Button
+                                        disabled={!assembler}
+                                        onClick={compileAndLoadAssembly}
+                                        title="Compile and load assembly"
+                                        variant="outline"
+                                    >
+                                        <Hammer />
+                                        Compile & Load
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    aria-label="Reset program"
+                                    disabled={!emulator || !activeTabCanUseLoadedProgram}
+                                    onClick={resetProgram}
+                                    size="icon"
+                                    title="Reset program"
+                                    variant="outline"
+                                >
+                                    <RotateCcw />
+                                </Button>
+                                <Button
+                                    aria-label="Step instruction"
+                                    disabled={!canUseStepControl}
+                                    onClick={stepProgram}
+                                    size="icon"
+                                    title="Step instruction"
+                                    variant="secondary"
+                                >
+                                    <StepForward />
+                                </Button>
+                                <Button
+                                    aria-label={isRunning ? "Pause continuous execution" : "Run continuously"}
+                                    disabled={!canUseRunControl}
+                                    onClick={toggleRunProgram}
+                                    size="icon"
+                                    title={isRunning ? "Pause continuous execution" : "Run continuously"}
+                                >
+                                    {isRunning ? <Pause /> : <SkipForward />}
+                                </Button>
+                            </div>
+                        </div>
+                        <TabsContent className="m-0 min-h-0 overflow-hidden" value="zenith-c">
+                            <CodeMirror
+                                basicSetup={{
+                                    autocompletion: false,
+                                    bracketMatching: false,
+                                    foldGutter: false,
+                                    highlightSelectionMatches: false,
+                                }}
+                                extensions={cEditorExtensions}
+                                height="100%"
+                                onChange={(value) => {
+                                    setZenithCSource(value);
+                                    setCompilerError(null);
+                                    setAssemblyError(null);
+                                    setAssemblyIsLoaded(false);
+                                    setIsRunning(false);
+                                    setInstructionsPerFrame([]);
+                                    setLastMessage("Zenith C changed. Compile and load before running those changes.");
+                                }}
+                                value={zenithCSource}
+                            />
+                        </TabsContent>
+                        <TabsContent className="m-0 min-h-0 overflow-hidden" value="assembly">
+                            <CodeMirror
+                                basicSetup={{
+                                    autocompletion: false,
+                                    bracketMatching: false,
+                                    foldGutter: false,
+                                    highlightSelectionMatches: false,
+                                }}
+                                extensions={assemblyEditorExtensions}
+                                height="100%"
+                                onChange={(value) => {
+                                    setAssemblySource(value);
+                                    setCompilerError(null);
+                                    setAssemblyError(null);
+                                    setAssemblyIsLoaded(false);
+                                    setIsRunning(false);
+                                    setInstructionsPerFrame([]);
+                                    setLastMessage("Assembly changed. Compile and load before running those changes.");
+                                }}
+                                value={assemblySource}
+                            />
+                        </TabsContent>
+                        <TabsContent className="m-0 min-h-0 overflow-hidden" value="machine-code">
+                            <CodeMirror
+                                basicSetup={{
+                                    autocompletion: false,
+                                    bracketMatching: false,
+                                    foldGutter: false,
+                                    highlightSelectionMatches: false,
+                                }}
+                                extensions={machineCodeEditorExtensions}
+                                height="100%"
+                                onChange={(value) => {
+                                    setIsRunning(false);
+                                    setMachineCode(value);
+                                    setCompilerError(null);
+                                    setAssemblyError(null);
+                                    setAssemblyIsLoaded(false);
+                                    setInstructionIndex(0);
+                                    setInstructionsPerFrame([]);
+                                    setLastMessage("Machine code changed. Reset or step from the first parsed line.");
+                                }}
+                                value={machineCode}
+                            />
+                        </TabsContent>
+                    </Tabs>
 
-            <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-l bg-muted/20">
-                <header className="border-b px-4 py-3">
-                    <h2 className="text-sm font-semibold">Peripherals</h2>
-                    <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
-                </header>
-                <div className="min-h-0 overflow-auto p-4">
-                    <section className="rounded-lg border bg-background">
-                        <div className="flex items-center justify-between border-b px-3 py-2">
-                            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                Framebuffer
-                            </h3>
-                            <span className="font-mono text-[11px] text-muted-foreground">
-                                {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT}
+                    <footer className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-t bg-muted/20">
+                        <div className="flex items-center justify-between border-b px-4 py-2">
+                            <h2 className="text-sm font-semibold">Output</h2>
+                            <span className="font-mono text-xs text-muted-foreground">
+                                {parseResult.instructions.length} instruction
+                                {parseResult.instructions.length === 1 ? "" : "s"} loaded
                             </span>
                         </div>
-                        <div className="p-3">
-                            <canvas
-                                aria-label="Framebuffer preview"
-                                className="aspect-video w-full border bg-black [image-rendering:pixelated]"
-                                height={FRAMEBUFFER_PREVIEW_HEIGHT}
-                                ref={framebufferCanvasRef}
-                                width={FRAMEBUFFER_PREVIEW_WIDTH}
-                            />
-                            <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
-                                <span>base</span>
-                                <span className="truncate text-right">0xFFFF_FFFF_FFA1_1400</span>
-                                <span>format</span>
-                                <span className="text-right">RGB888</span>
-                            </div>
+                        <div className="min-h-0 overflow-auto p-4 font-mono text-xs leading-6">
+                            {!emulator ? <p>Loading emulator...</p> : null}
+                            {activeTab === "zenith-c" && !compiler ? <p>Loading compiler...</p> : null}
+                            {activeTab === "zenith-c" && !assembler ? <p>Loading assembler...</p> : null}
+                            {activeTab === "assembly" && !assembler ? <p>Loading assembler...</p> : null}
+                            {compilerError ? (
+                                <div className="text-destructive">
+                                    <p>{compilerError}</p>
+                                </div>
+                            ) : assemblyError ? (
+                                <div className="text-destructive">
+                                    <p>{assemblyError}</p>
+                                </div>
+                            ) : parseResult.errors.length > 0 ? (
+                                <div className="text-destructive">
+                                    {parseResult.errors.map((parseError) => (
+                                        <p key={parseError}>{parseError}</p>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    <p>{lastMessage}</p>
+                                    <p>
+                                        next:{" "}
+                                        {activeInstruction
+                                            ? `line ${activeInstruction.lineNumber} (${activeInstruction.text})`
+                                            : "outside parsed program"}
+                                    </p>
+                                    {activeTab === "assembly" ? (
+                                        <p>
+                                            {assemblyIsLoaded ? "assembly output is loaded" : "assembly is not loaded"}
+                                        </p>
+                                    ) : null}
+                                </>
+                            )}
                         </div>
-                    </section>
-                    <InstructionFrameChart isRunning={isRunning} samples={instructionsPerFrame} />
+                    </footer>
+                </section>
+
+                <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-l bg-muted/20">
+                    <header className="border-b px-4 py-3">
+                        <h2 className="text-sm font-semibold">Peripherals</h2>
+                        <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
+                    </header>
+                    <div className="min-h-0 overflow-auto p-4">
+                        <section className="rounded-lg border bg-background">
+                            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Framebuffer
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-[11px] text-muted-foreground">
+                                        {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT}
+                                    </span>
+                                    <Button
+                                        aria-label="Open fullscreen framebuffer"
+                                        disabled={!emulator}
+                                        onClick={() => setFullscreenFramebufferIsOpen(true)}
+                                        size="icon-xs"
+                                        title="Open fullscreen framebuffer"
+                                        variant="ghost"
+                                    >
+                                        <Maximize2 />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="p-3">
+                                <canvas
+                                    aria-label="Framebuffer preview"
+                                    className="aspect-video w-full border bg-black [image-rendering:pixelated]"
+                                    height={FRAMEBUFFER_PREVIEW_HEIGHT}
+                                    ref={framebufferCanvasRef}
+                                    width={FRAMEBUFFER_PREVIEW_WIDTH}
+                                />
+                                <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
+                                    <span>base</span>
+                                    <span className="truncate text-right">0xFFFF_FFFF_FFA1_1400</span>
+                                    <span>format</span>
+                                    <span className="text-right">RGB888</span>
+                                </div>
+                            </div>
+                        </section>
+                        <InstructionFrameChart isRunning={isRunning} samples={instructionsPerFrame} />
+                    </div>
+                </aside>
+            </main>
+            {fullscreenFramebufferIsOpen ? (
+                <div
+                    aria-labelledby="fullscreen-framebuffer-title"
+                    aria-modal="true"
+                    className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] bg-background/95 text-foreground backdrop-blur-sm"
+                    onClick={() => setFullscreenFramebufferIsOpen(false)}
+                    role="dialog"
+                >
+                    <header
+                        className="flex items-center justify-between gap-3 border-b bg-background px-4 py-3"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="min-w-0">
+                            <h2 className="text-sm font-semibold" id="fullscreen-framebuffer-title">
+                                Framebuffer
+                            </h2>
+                            <p className="font-mono text-xs text-muted-foreground">
+                                {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT} RGB888
+                            </p>
+                        </div>
+                        <Button
+                            aria-label="Close fullscreen framebuffer"
+                            onClick={() => setFullscreenFramebufferIsOpen(false)}
+                            size="icon"
+                            title="Close fullscreen framebuffer"
+                            variant="outline"
+                        >
+                            <X />
+                        </Button>
+                    </header>
+                    <div
+                        className="grid min-h-0 place-items-center overflow-auto bg-black p-4"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <canvas
+                            aria-label="Fullscreen framebuffer"
+                            className="max-h-full max-w-full border border-border bg-black [image-rendering:pixelated]"
+                            height={FRAMEBUFFER_HEIGHT}
+                            ref={fullscreenFramebufferCanvasRef}
+                            width={FRAMEBUFFER_WIDTH}
+                        />
+                    </div>
                 </div>
-            </aside>
-        </main>
+            ) : null}
+        </>
     );
 }
 
