@@ -2,7 +2,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import { Hammer, Maximize2, Pause, RotateCcw, SkipForward, StepForward, X } from "lucide-react";
-import { EditorView, Decoration } from "@codemirror/view";
+import { EditorView, Decoration, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const INSTRUCTION_FRAME_HISTORY_LIMIT = 90;
 const INSTRUCTION_CHART_WIDTH = 280;
 const INSTRUCTION_CHART_HEIGHT = 72;
 const INSTRUCTION_CHART_PADDING = 6;
+const EDITOR_MINIMAP_WIDTH = 52;
 
 function paintFramebufferPreview(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
     const context = canvas.getContext("2d");
@@ -197,6 +198,127 @@ const zenithHighlightStyle = HighlightStyle.define([
     { tag: [tags.operator, tags.punctuation, tags.separator], color: "var(--muted-foreground)" },
     { tag: tags.invalid, color: "var(--destructive)" },
 ]);
+
+const editorMinimap = ViewPlugin.fromClass(
+    class {
+        private readonly view: EditorView;
+        private readonly dom: HTMLDivElement;
+        private readonly lineLayer: HTMLDivElement;
+        private readonly viewportMarker: HTMLDivElement;
+        private animationFrame: number | null = null;
+        private dragging = false;
+
+        constructor(view: EditorView) {
+            this.view = view;
+            this.dom = document.createElement("div");
+            this.dom.className = "cm-minimap";
+
+            this.lineLayer = document.createElement("div");
+            this.lineLayer.className = "cm-minimap-lines";
+
+            this.viewportMarker = document.createElement("div");
+            this.viewportMarker.className = "cm-minimap-viewport";
+
+            this.dom.append(this.lineLayer, this.viewportMarker);
+            this.view.dom.append(this.dom);
+
+            this.dom.addEventListener("pointerdown", this.handlePointerDown);
+            this.view.scrollDOM.addEventListener("scroll", this.updateViewport, { passive: true });
+            this.scheduleRender();
+        }
+
+        update(update: ViewUpdate) {
+            if (update.docChanged || update.geometryChanged || update.viewportChanged) {
+                this.scheduleRender();
+            } else {
+                this.updateViewport();
+            }
+        }
+
+        destroy() {
+            if (this.animationFrame !== null) {
+                cancelAnimationFrame(this.animationFrame);
+            }
+
+            window.removeEventListener("pointermove", this.handlePointerMove);
+            window.removeEventListener("pointerup", this.handlePointerUp);
+            this.view.scrollDOM.removeEventListener("scroll", this.updateViewport);
+            this.dom.removeEventListener("pointerdown", this.handlePointerDown);
+            this.dom.remove();
+        }
+
+        private scheduleRender = () => {
+            if (this.animationFrame !== null) return;
+
+            this.animationFrame = requestAnimationFrame(() => {
+                this.animationFrame = null;
+                this.render();
+            });
+        };
+
+        private render() {
+            const lines = this.view.state.doc;
+            const minimapHeight = Math.max(this.dom.clientHeight, 1);
+            const gap = lines.lines > minimapHeight / 2 ? 0 : 1;
+            const lineHeight = Math.min(3, Math.max(0.1, (minimapHeight - 12 - gap * (lines.lines - 1)) / lines.lines));
+            const fragment = document.createDocumentFragment();
+
+            this.lineLayer.textContent = "";
+            this.lineLayer.style.setProperty("--cm-minimap-line-height", `${lineHeight}px`);
+            this.lineLayer.style.setProperty("--cm-minimap-line-gap", `${gap}px`);
+
+            for (let lineNumber = 1; lineNumber <= lines.lines; lineNumber += 1) {
+                const line = lines.line(lineNumber).text;
+                const previewLine = document.createElement("div");
+                previewLine.className = line.trim() ? "cm-minimap-line" : "cm-minimap-line cm-minimap-line-empty";
+                previewLine.style.width = `${Math.min(100, Math.max(8, line.trimEnd().length * 1.8))}%`;
+                fragment.append(previewLine);
+            }
+
+            this.lineLayer.append(fragment);
+            this.updateViewport();
+        }
+
+        private updateViewport = () => {
+            const scrollHeight = Math.max(this.view.scrollDOM.scrollHeight, 1);
+            const clientHeight = Math.max(this.view.scrollDOM.clientHeight, 1);
+            const minimapHeight = Math.max(this.dom.clientHeight, 1);
+            const viewportHeight = Math.max(18, (clientHeight / scrollHeight) * minimapHeight);
+            const maxTop = Math.max(0, minimapHeight - viewportHeight);
+            const maxScrollTop = Math.max(1, scrollHeight - clientHeight);
+            const top = Math.min(maxTop, (this.view.scrollDOM.scrollTop / maxScrollTop) * maxTop);
+
+            this.viewportMarker.style.height = `${Math.min(minimapHeight, viewportHeight)}px`;
+            this.viewportMarker.style.transform = `translateY(${top}px)`;
+        };
+
+        private handlePointerDown = (event: PointerEvent) => {
+            event.preventDefault();
+            this.dragging = true;
+            this.scrollToPointer(event);
+            window.addEventListener("pointermove", this.handlePointerMove);
+            window.addEventListener("pointerup", this.handlePointerUp, { once: true });
+        };
+
+        private handlePointerMove = (event: PointerEvent) => {
+            if (!this.dragging) return;
+            event.preventDefault();
+            this.scrollToPointer(event);
+        };
+
+        private handlePointerUp = () => {
+            this.dragging = false;
+            window.removeEventListener("pointermove", this.handlePointerMove);
+        };
+
+        private scrollToPointer(event: PointerEvent) {
+            const rect = this.dom.getBoundingClientRect();
+            const ratio = Math.min(1, Math.max(0, (event.clientY - rect.top) / Math.max(rect.height, 1)));
+            const scrollableHeight = this.view.scrollDOM.scrollHeight - this.view.scrollDOM.clientHeight;
+            this.view.scrollDOM.scrollTop = ratio * Math.max(0, scrollableHeight);
+        }
+    }
+);
 
 const assemblyLanguage = StreamLanguage.define({
     name: "zenith-assembly",
@@ -648,13 +770,20 @@ export function App() {
             syntaxHighlighting(zenithHighlightStyle),
             EditorView.theme({
                 "&": {
+                    position: "relative",
                     height: "100%",
                     backgroundColor: "transparent",
                     color: "var(--foreground)",
                     fontSize: "13px",
                 },
+                "&.cm-editor": {
+                    minHeight: 0,
+                },
                 ".cm-scroller": {
                     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    height: "100%",
+                    overflow: "auto",
+                    paddingRight: `${EDITOR_MINIMAP_WIDTH}px`,
                 },
                 ".cm-content": {
                     caretColor: "var(--foreground)",
@@ -678,7 +807,49 @@ export function App() {
                 ".cm-activeLine": {
                     backgroundColor: "color-mix(in oklch, var(--muted) 55%, transparent)",
                 },
+                ".cm-minimap": {
+                    position: "absolute",
+                    insetBlock: 0,
+                    right: 0,
+                    zIndex: 5,
+                    width: `${EDITOR_MINIMAP_WIDTH}px`,
+                    borderLeft: "1px solid var(--border)",
+                    backgroundColor: "color-mix(in oklch, var(--background) 88%, var(--muted))",
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    userSelect: "none",
+                },
+                ".cm-minimap-lines": {
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--cm-minimap-line-gap)",
+                    height: "100%",
+                    minHeight: "100%",
+                    padding: "6px 6px",
+                    pointerEvents: "none",
+                },
+                ".cm-minimap-line": {
+                    flex: "0 0 var(--cm-minimap-line-height)",
+                    maxWidth: "100%",
+                    borderRadius: "999px",
+                    backgroundColor: "color-mix(in oklch, var(--foreground) 28%, transparent)",
+                },
+                ".cm-minimap-line-empty": {
+                    opacity: 0,
+                },
+                ".cm-minimap-viewport": {
+                    position: "absolute",
+                    insetInline: "4px",
+                    top: 0,
+                    border: "1px solid color-mix(in oklch, var(--primary) 45%, transparent)",
+                    borderRadius: "4px",
+                    backgroundColor: "color-mix(in oklch, var(--primary) 14%, transparent)",
+                    boxShadow: "0 0 0 1px color-mix(in oklch, var(--background) 70%, transparent)",
+                    pointerEvents: "none",
+                },
             }),
+            editorMinimap,
         ],
         []
     );
@@ -975,7 +1146,7 @@ export function App() {
 
                 <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_15rem]">
                     <Tabs
-                        className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0"
+                        className="flex min-h-0 flex-col gap-0"
                         onValueChange={(value) => selectTab(value as EditorTab)}
                         value={activeTab}
                     >
@@ -1053,6 +1224,7 @@ export function App() {
                                     foldGutter: false,
                                     highlightSelectionMatches: false,
                                 }}
+                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
                                 extensions={cEditorExtensions}
                                 height="100%"
                                 onChange={(value) => {
@@ -1075,6 +1247,7 @@ export function App() {
                                     foldGutter: false,
                                     highlightSelectionMatches: false,
                                 }}
+                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
                                 extensions={assemblyEditorExtensions}
                                 height="100%"
                                 onChange={(value) => {
@@ -1097,6 +1270,7 @@ export function App() {
                                     foldGutter: false,
                                     highlightSelectionMatches: false,
                                 }}
+                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
                                 extensions={machineCodeEditorExtensions}
                                 height="100%"
                                 onChange={(value) => {
