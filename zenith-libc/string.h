@@ -18,3 +18,12 @@ bool strncmp(char* s1, char* s2, uint16_t n) {
 
     return *s1 == *s2;
 }
+
+uint16_t strlen(char* s) {
+    uint16_t l = 0;
+    while (*s) {
+        ++l;
+        ++s;
+    }
+    return l;
+}
