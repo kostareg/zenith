@@ -3,6 +3,7 @@
 #include "zenith/compiler.hpp"
 #include "zenith/parser.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -45,6 +46,31 @@ start: add r1, r2, r3
     EXPECT_EQ(code[3] & 0x7F, 0x1A);
     EXPECT_EQ(test::field1(code[3]), 0);
     EXPECT_EQ(test::imm20(code[3]), -12);
+}
+
+TEST(Compiler, EmitsDataDirectives) {
+    const Ast ast = test::parse_source(R"(.data
+bytes: .byte 1, 2, 3
+word: .quad -1
+gap: .zero 2
+.main
+  l64 t0, zero, word
+)");
+
+    const ProgramImage image = Compiler(ast).compile_program();
+
+    ASSERT_EQ(image.data.size(), 13);
+    EXPECT_EQ(image.data[0], 1);
+    EXPECT_EQ(image.data[1], 2);
+    EXPECT_EQ(image.data[2], 3);
+    for (std::size_t i = 3; i < 11; ++i) {
+        EXPECT_EQ(image.data[i], 0xFF);
+    }
+    EXPECT_EQ(image.data[11], 0);
+    EXPECT_EQ(image.data[12], 0);
+
+    ASSERT_EQ(image.code.size(), 1);
+    EXPECT_EQ(test::imm15(image.code[0]), 3);
 }
 
 TEST(Compiler, RejectsDuplicateLabels) {

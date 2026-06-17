@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
 namespace zenith::emulator {
 
@@ -51,6 +52,7 @@ class Emulator {
     };
 
     void reset();
+    [[nodiscard]] bool load_data(const std::vector<std::uint8_t>& data) noexcept;
     void step(uint32_t);
 
     [[nodiscard]] static std::string_view version() noexcept;
@@ -84,6 +86,7 @@ class Emulator {
   private:
     // todo: we actually have 1GiB memory
     static constexpr std::size_t kMemorySize = 64 * 1024;
+    static constexpr std::size_t kInitialStackPointer = 16000;
     static constexpr std::uint64_t kFramebufferControlBase = 0xFFFFFFFFFFA01400ULL;
     static constexpr std::uint64_t kFramebufferResolutionAddress = kFramebufferControlBase;
     static constexpr std::uint64_t kFramebufferStatusControlAddress = kFramebufferControlBase + 4;

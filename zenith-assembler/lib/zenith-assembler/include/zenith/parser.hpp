@@ -3,6 +3,7 @@
 #include "zenith/lexer.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -21,7 +22,7 @@ enum class OperandKind {
 struct Operand {
     OperandKind kind;
     std::string ident;
-    int number = 0;
+    std::int64_t number = 0;
 };
 
 struct Instruction {

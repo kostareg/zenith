@@ -309,6 +309,10 @@ bool Parser::match(TokenType type) {
 }
 
 ExternalDeclaration Parser::parse_external_declaration() {
+    if (check(TokenType::KeywordStatic)) {
+        fail_current("'static' is not supported at file scope");
+    }
+
     DeclarationSpecifiers specifiers = parse_declaration_specifiers(true);
 
     if (match(TokenType::Semicolon)) {

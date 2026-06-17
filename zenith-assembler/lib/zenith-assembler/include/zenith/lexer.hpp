@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -24,7 +25,7 @@ struct Token {
     size_t len;
 
     std::string ident;
-    int num;
+    std::int64_t num;
 
     void display() {
         switch (tt) {

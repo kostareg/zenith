@@ -265,6 +265,11 @@ type ParseResult = {
     errors: Array<string>;
 };
 
+type AssembledProgram = {
+    machineCode: string;
+    data: Array<number>;
+};
+
 type ChartPoint = {
     x: number;
     y: number;
@@ -359,6 +364,21 @@ function unknownErrorMessage(error: unknown) {
 
 function appendInstructionFrameSample(history: Array<number>, sample: number) {
     return [...history.slice(-(INSTRUCTION_FRAME_HISTORY_LIMIT - 1)), sample];
+}
+
+function assembleProgram(assembler: NonNullable<ReturnType<typeof useZenithAssembler>>, source: string): AssembledProgram {
+    const maybeProgramAssembler = assembler as typeof assembler & {
+        assembleProgram?: (source: string) => AssembledProgram;
+    };
+
+    if (typeof maybeProgramAssembler.assembleProgram === "function") {
+        return maybeProgramAssembler.assembleProgram(source);
+    }
+
+    return {
+        machineCode: assembler.assemble(source),
+        data: [],
+    };
 }
 
 function createInstructionChartPoints(samples: Array<number>): Array<ChartPoint> {
@@ -488,6 +508,7 @@ export function App() {
     const [compilerError, setCompilerError] = useState<string | null>(null);
     const [assemblyError, setAssemblyError] = useState<string | null>(null);
     const [assemblyIsLoaded, setAssemblyIsLoaded] = useState(false);
+    const [loadedData, setLoadedData] = useState<Array<number>>([]);
     const [registers, setRegisters] = useState<Array<bigint>>(createZeroRegisters);
     const [instructionIndex, setInstructionIndex] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
@@ -667,6 +688,10 @@ export function App() {
     function resetProgram() {
         setIsRunning(false);
         emulator?.reset();
+        if (emulator && loadedData.length > 0 && !emulator.loadData(loadedData)) {
+            setLastMessage("Program data is too large to load without overlapping the stack.");
+            return;
+        }
         setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
         setInstructionIndex(0);
         setFramebufferRevision((revision) => revision + 1);
@@ -721,13 +746,18 @@ export function App() {
         setLastMessage("Running continuously.");
     }
 
-    function loadMachineCode(compiled: string, shouldRun: boolean) {
+    function loadMachineCode(program: AssembledProgram, shouldRun: boolean) {
+        const compiled = program.machineCode;
         const compiledParseResult = parseProgram(compiled);
         setIsRunning(false);
         emulator?.reset();
+        if (emulator && program.data.length > 0 && !emulator.loadData(program.data)) {
+            throw new Error("program data is too large to load without overlapping the stack");
+        }
         setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
         setInstructionIndex(0);
         setMachineCode(compiled);
+        setLoadedData(program.data);
         setFramebufferRevision((revision) => revision + 1);
         setInstructionsPerFrame([]);
 
@@ -752,7 +782,7 @@ export function App() {
         setCompilerError(null);
 
         try {
-            const compiled = assembler.assemble(assemblySource);
+            const compiled = assembleProgram(assembler, assemblySource);
             const compiledParseResult = loadMachineCode(compiled, false);
             setAssemblyError(null);
             setAssemblyIsLoaded(true);
@@ -784,7 +814,7 @@ export function App() {
         try {
             const compiledAssembly = compiler.compile(source);
             setAssemblySource(compiledAssembly);
-            const compiledMachineCode = assembler.assemble(compiledAssembly);
+            const compiledMachineCode = assembleProgram(assembler, compiledAssembly);
             const compiledParseResult = loadMachineCode(compiledMachineCode, true);
             setCompilerError(null);
             setAssemblyError(null);

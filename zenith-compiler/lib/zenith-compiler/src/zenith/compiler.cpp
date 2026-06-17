@@ -91,6 +91,19 @@ struct Symbol {
     bool is_array = false;
 };
 
+struct GlobalSymbol {
+    std::int64_t address = 0;
+    std::size_t slots = 1;
+    bool is_array = false;
+    std::string label;
+};
+
+struct GlobalDefinition {
+    std::string name;
+    GlobalSymbol symbol;
+    std::vector<std::int64_t> values;
+};
+
 struct FunctionInfo {
     const FunctionDefinition* definition = nullptr;
     std::string label;
@@ -106,6 +119,8 @@ class CodeGenerator {
         if (function_order.empty()) {
             throw std::runtime_error("cannot compile a program with no function definitions");
         }
+
+        emit_data_section();
 
         emitter->line(".main");
         emitter->label("start");
@@ -128,12 +143,16 @@ class CodeGenerator {
     std::unordered_map<std::string, FunctionInfo> functions;
     std::vector<std::string> function_order;
     std::unordered_map<std::string, std::int64_t> constants;
+    std::unordered_map<std::string, GlobalSymbol> globals;
+    std::vector<GlobalDefinition> global_order;
     std::vector<std::unordered_map<std::string, Symbol>> scopes;
     std::vector<std::string> break_labels;
     std::vector<std::string> continue_labels;
     std::string current_return_label;
     int next_function_label = 0;
+    int next_global_label = 0;
     int next_label = 0;
+    std::int64_t next_global_address = 0;
     std::int64_t next_frame_offset = kSavedRegisterBytes;
 
     void collect_declarations() {
@@ -142,9 +161,7 @@ class CodeGenerator {
                 Overloaded{
                     [this](const VariableDeclaration& variable) {
                         register_type_constants(*variable.type);
-                        if (!variable.declarators.empty()) {
-                            fail_at(variable.location, "global variables are not supported by the compiler yet");
-                        }
+                        collect_global_declaration(variable);
                     },
                     [this](const FunctionDeclaration& function) {
                         register_function_type_constants(function);
@@ -156,6 +173,9 @@ class CodeGenerator {
                         if (functions.contains(name)) {
                             fail_at(function.declaration.location, "duplicate function definition '" + name + "'");
                         }
+                        if (globals.contains(name)) {
+                            fail_at(function.declaration.location, "function name '" + name + "' conflicts with a global variable");
+                        }
 
                         const std::string label = "F" + std::to_string(next_function_label++);
                         functions.emplace(name, FunctionInfo{&function, label});
@@ -164,6 +184,10 @@ class CodeGenerator {
                 },
                 declaration
             );
+        }
+
+        if (next_global_address > kInitialStackPointer) {
+            throw std::runtime_error("global data section overlaps the initial stack");
         }
     }
 
@@ -183,9 +207,91 @@ class CodeGenerator {
         for (const EnumEnumerator& enumerator : type.enum_specifier->enumerators) {
             const std::int64_t value =
                 enumerator.value == nullptr ? next_value : require_constant(*enumerator.value, "enum value");
+            if (globals.contains(enumerator.name) || functions.contains(enumerator.name)) {
+                fail_at(enumerator.location, "enum constant '" + enumerator.name + "' conflicts with an existing name");
+            }
             constants[enumerator.name] = value;
             next_value = value + 1;
         }
+    }
+
+    void collect_global_declaration(const VariableDeclaration& declaration) {
+        if (declaration.is_static) {
+            fail_at(declaration.location, "static global variables are not supported");
+        }
+
+        if (declaration.declarators.empty()) {
+            return;
+        }
+
+        if (declaration.type->struct_specifier.has_value()) {
+            fail_at(declaration.location, "struct variables are not supported yet");
+        }
+
+        for (const VariableDeclarator& variable : declaration.declarators) {
+            const std::string name = require_name(variable.declarator, "global variable");
+            if (globals.contains(name)) {
+                fail_at(variable.declarator.location, "duplicate global name '" + name + "'");
+            }
+            if (functions.contains(name)) {
+                fail_at(variable.declarator.location, "global variable '" + name + "' conflicts with a function");
+            }
+            if (constants.contains(name)) {
+                fail_at(variable.declarator.location, "global variable '" + name + "' conflicts with an enum constant");
+            }
+
+            const std::size_t slots = slots_for_declarator(variable.declarator, variable.initializer.get());
+            const bool is_array = !variable.declarator.array_dimensions.empty();
+            const std::int64_t address = allocate_global_slots(slots, variable.declarator.location);
+            const std::string label = "G" + std::to_string(next_global_label++);
+            const GlobalSymbol symbol{address, slots, is_array, label};
+            std::vector<std::int64_t> values = global_initializer_values(variable.initializer.get(), slots, is_array);
+
+            globals.emplace(name, symbol);
+            global_order.push_back(GlobalDefinition{name, symbol, std::move(values)});
+        }
+    }
+
+    [[nodiscard]] std::int64_t allocate_global_slots(std::size_t slots, SourceLocation location) {
+        if (slots == 0 || slots > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max() / kWordSize)) {
+            fail_at(location, "invalid global storage size");
+        }
+        const std::int64_t address = next_global_address;
+        next_global_address += static_cast<std::int64_t>(slots) * kWordSize;
+        return address;
+    }
+
+    [[nodiscard]] std::vector<std::int64_t>
+    global_initializer_values(const Initializer* initializer, std::size_t slots, bool is_array) {
+        std::vector<std::int64_t> values(slots, 0);
+        if (initializer == nullptr) {
+            return values;
+        }
+
+        if (!initializer->is_list()) {
+            if (is_array) {
+                fail_at(initializer->location, "array initializers must use initializer lists");
+            }
+            values[0] = require_constant(*initializer->expression, "global initializer");
+            return values;
+        }
+
+        if (!is_array && initializer->values.size() != 1) {
+            fail_at(initializer->location, "scalar initializer lists must contain exactly one value");
+        }
+        if (initializer->values.size() > slots) {
+            fail_at(initializer->location, "too many values in initializer list");
+        }
+
+        for (std::size_t i = 0; i < initializer->values.size(); ++i) {
+            const Initializer& value = *initializer->values[i];
+            if (value.is_list()) {
+                fail_at(value.location, "nested initializer lists are not supported yet");
+            }
+            values[i] = require_constant(*value.expression, "global initializer");
+        }
+
+        return values;
     }
 
     [[nodiscard]] std::string entry_label() const {
@@ -198,6 +304,20 @@ class CodeGenerator {
 
     [[nodiscard]] std::string new_label() {
         return "L" + std::to_string(next_label++);
+    }
+
+    void emit_data_section() {
+        if (global_order.empty()) {
+            return;
+        }
+
+        emitter->line(".data");
+        for (const GlobalDefinition& global : global_order) {
+            emitter->label(global.symbol.label);
+            for (const std::int64_t value : global.values) {
+                emitter->emit(".quad " + std::to_string(value));
+            }
+        }
     }
 
     void compile_function(const FunctionInfo& function) {
@@ -661,6 +781,15 @@ class CodeGenerator {
             return;
         }
 
+        if (const GlobalSymbol* symbol = find_global(identifier.name)) {
+            if (symbol->is_array) {
+                emit_global_address(*symbol);
+            } else {
+                emit_load_from_global("t0", *symbol);
+            }
+            return;
+        }
+
         if (const auto constant = constants.find(identifier.name); constant != constants.end()) {
             emit_load_constant("t0", static_cast<std::uint64_t>(constant->second));
             return;
@@ -970,11 +1099,15 @@ class CodeGenerator {
         std::visit(
             Overloaded{
                 [this, &expression](const IdentifierExpression& identifier) {
-                    const Symbol* symbol = find_symbol(identifier.name);
-                    if (symbol == nullptr) {
-                        fail_at(expression.location, "unknown assignable identifier '" + identifier.name + "'");
+                    if (const Symbol* symbol = find_symbol(identifier.name)) {
+                        emit_frame_address(symbol->offset);
+                        return;
                     }
-                    emit_frame_address(symbol->offset);
+                    if (const GlobalSymbol* symbol = find_global(identifier.name)) {
+                        emit_global_address(*symbol);
+                        return;
+                    }
+                    fail_at(expression.location, "unknown assignable identifier '" + identifier.name + "'");
                 },
                 [this, &expression](const UnaryExpression& unary) {
                     if (unary.op != UnaryOperator::Dereference) {
@@ -1001,6 +1134,8 @@ class CodeGenerator {
         if (const auto* identifier = std::get_if<IdentifierExpression>(&index.object->node)) {
             if (const Symbol* symbol = find_symbol(identifier->name); symbol != nullptr && symbol->is_array) {
                 emit_frame_address(symbol->offset);
+            } else if (const GlobalSymbol* global = find_global(identifier->name); global != nullptr && global->is_array) {
+                emit_global_address(*global);
             } else {
                 compile_expression(*index.object);
             }
@@ -1023,7 +1158,20 @@ class CodeGenerator {
         }
 
         const Symbol* symbol = find_symbol(identifier->name);
-        return symbol != nullptr && symbol->is_array;
+        if (symbol != nullptr) {
+            return symbol->is_array;
+        }
+
+        const GlobalSymbol* global = find_global(identifier->name);
+        return global != nullptr && global->is_array;
+    }
+
+    [[nodiscard]] const GlobalSymbol* find_global(const std::string& name) const {
+        const auto global = globals.find(name);
+        if (global == globals.end()) {
+            return nullptr;
+        }
+        return &global->second;
     }
 
     void emit_frame_address(std::int64_t offset) {
@@ -1038,6 +1186,15 @@ class CodeGenerator {
     void emit_store_to_frame(std::string_view reg, std::int64_t offset) {
         ensure_frame_offset(offset);
         emitter->emit("s64 " + std::string(reg) + ", s0, " + std::to_string(offset));
+    }
+
+    void emit_global_address(const GlobalSymbol& symbol) {
+        emit_load_constant("t0", static_cast<std::uint64_t>(symbol.address));
+    }
+
+    void emit_load_from_global(std::string_view reg, const GlobalSymbol& symbol) {
+        emit_global_address(symbol);
+        emitter->emit("l64 " + std::string(reg) + ", t0, 0");
     }
 
     void ensure_frame_offset(std::int64_t offset) {

@@ -40,21 +40,21 @@ std::vector<std::uint8_t> Format::format() const {
     }
 
     if constexpr (std::numeric_limits<std::size_t>::max() > std::numeric_limits<std::uint64_t>::max() / 4) {
-        if (code.size() > std::numeric_limits<std::uint64_t>::max() / 4) {
+        if (image.code.size() > std::numeric_limits<std::uint64_t>::max() / 4) {
             throw std::runtime_error("Zelf code section is too large");
         }
     }
 
-    if (code.size() > (std::numeric_limits<std::size_t>::max() - kHeaderSize) / 4) {
+    if (image.code.size() > (std::numeric_limits<std::size_t>::max() - kHeaderSize - image.data.size()) / 4) {
         throw std::runtime_error("Zelf output is too large");
     }
 
-    const std::uint64_t data_size = 0;
-    const std::uint64_t code_size = static_cast<std::uint64_t>(code.size()) * 4;
-    const std::uint64_t entry_off = 0;
+    const std::uint64_t data_size = static_cast<std::uint64_t>(image.data.size());
+    const std::uint64_t code_size = static_cast<std::uint64_t>(image.code.size()) * 4;
+    const std::uint64_t entry_off = image.entry_offset;
 
     std::vector<std::uint8_t> bytes;
-    bytes.reserve(kHeaderSize + code.size() * 4);
+    bytes.reserve(kHeaderSize + image.data.size() + image.code.size() * 4);
 
     bytes.push_back('Z');
     bytes.push_back('E');
@@ -69,7 +69,9 @@ std::vector<std::uint8_t> Format::format() const {
     append_u64_le(bytes, code_size);
     append_u64_le(bytes, entry_off);
 
-    for (const std::uint32_t instruction : code) {
+    bytes.insert(bytes.end(), image.data.begin(), image.data.end());
+
+    for (const std::uint32_t instruction : image.code) {
         append_u32_le(bytes, instruction);
     }
 

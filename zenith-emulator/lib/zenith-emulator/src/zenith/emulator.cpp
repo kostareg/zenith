@@ -3,6 +3,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <algorithm>
 #include <limits>
 
 namespace zenith::emulator {
@@ -123,6 +124,15 @@ void Emulator::reset() {
     memory.fill(0);
     framebuffer.fill(0);
     framebuffer_enabled = false;
+}
+
+bool Emulator::load_data(const std::vector<std::uint8_t>& data) noexcept {
+    if (data.size() > kInitialStackPointer || data.size() > memory.size()) {
+        return false;
+    }
+
+    std::copy(data.begin(), data.end(), memory.begin());
+    return true;
 }
 
 void Emulator::step(std::uint32_t instruction) {
@@ -430,6 +440,15 @@ emscripten::val get_framebuffer(zenith::emulator::Emulator& emulator) {
     return emscripten::val(emscripten::typed_memory_view(framebuffer.size(), framebuffer.data()));
 }
 
+bool load_data(zenith::emulator::Emulator& emulator, emscripten::val input) {
+    const auto length = input["length"].as<std::size_t>();
+    std::vector<std::uint8_t> data(length);
+    for (std::size_t i = 0; i < length; ++i) {
+        data[i] = input[i].as<std::uint8_t>();
+    }
+    return emulator.load_data(data);
+}
+
 std::string version() {
     return std::string(zenith::emulator::Emulator::version());
 }
@@ -438,6 +457,7 @@ EMSCRIPTEN_BINDINGS(zenith_emulator) {
     emscripten::class_<zenith::emulator::Emulator>("Emulator")
         .constructor<>()
         .function("reset", &zenith::emulator::Emulator::reset)
+        .function("loadData", &load_data)
         .function("step", &zenith::emulator::Emulator::step)
         .function("getRegisters", &get_registers)
         .function("getFramebuffer", &get_framebuffer)

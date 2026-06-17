@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -53,8 +54,27 @@ TEST(Format, WritesZelfHeaderAndLittleEndianCode) {
     EXPECT_EQ(bytes[47], 0xff);
 }
 
+TEST(Format, WritesDataBeforeLittleEndianCode) {
+    ProgramImage image;
+    image.data = {0xAA, 0xBB, 0xCC};
+    image.code = {0x00020000};
+
+    const std::vector<std::uint8_t> bytes = Format("demo", std::move(image)).format();
+
+    ASSERT_EQ(bytes.size(), 47);
+    EXPECT_EQ(bytes[16], 3);
+    EXPECT_EQ(bytes[24], 4);
+    EXPECT_EQ(bytes[40], 0xAA);
+    EXPECT_EQ(bytes[41], 0xBB);
+    EXPECT_EQ(bytes[42], 0xCC);
+    EXPECT_EQ(bytes[43], 0x00);
+    EXPECT_EQ(bytes[44], 0x00);
+    EXPECT_EQ(bytes[45], 0x02);
+    EXPECT_EQ(bytes[46], 0x00);
+}
+
 TEST(Format, RejectsNamesLongerThanZelfHeaderAllows) {
-    EXPECT_THROW(static_cast<void>(Format("toolonggg", {}).format()), std::runtime_error);
+    EXPECT_THROW(static_cast<void>(Format("toolonggg", std::vector<std::uint32_t>{}).format()), std::runtime_error);
 }
 
 } // namespace

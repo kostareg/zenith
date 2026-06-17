@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         Lexer lexer(program);
         Parser parser(lexer.lex());
         Compiler compiler(parser.parse());
-        const std::vector<std::uint32_t> compiled = compiler.compile();
+        const ProgramImage compiled = compiler.compile_program();
 
         const std::vector<std::uint8_t> zelf = Format(kDefaultProgramName, compiled).format();
 

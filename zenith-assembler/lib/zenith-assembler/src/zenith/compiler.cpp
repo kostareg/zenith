@@ -3,6 +3,7 @@
 #include <array>
 #include <cctype>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -52,7 +53,17 @@ constexpr InstructionInfo kJumpPseudo{
     InstructionFormat::JumpPseudo,
 };
 
-using Labels = std::unordered_map<std::string, std::int32_t>;
+enum class LabelKind {
+    Code,
+    Data,
+};
+
+struct Label {
+    LabelKind kind = LabelKind::Code;
+    std::int32_t value = 0;
+};
+
+using Labels = std::unordered_map<std::string, Label>;
 
 [[nodiscard]] const InstructionInfo* find_instruction(std::string_view mnemonic) {
     if (mnemonic == kJumpPseudo.mnemonic) return &kJumpPseudo;
@@ -131,14 +142,17 @@ using Labels = std::unordered_map<std::string, std::int32_t>;
     return value >= min && value <= max;
 }
 
-[[nodiscard]] std::int32_t resolve_immediate(
-    const Operand& operand, const Labels& labels, std::int32_t pc, std::string_view mnemonic, bool allow_labels
-) {
-    if (operand.kind == OperandKind::Number) return operand.number;
-
-    if (!allow_labels) {
-        throw std::runtime_error("expected numeric immediate in instruction '" + std::string(mnemonic) + "'");
+[[nodiscard]] std::int32_t checked_i32(std::int64_t value, std::string_view context) {
+    if (value < std::numeric_limits<std::int32_t>::min() || value > std::numeric_limits<std::int32_t>::max()) {
+        throw std::runtime_error(std::string(context) + " out of 32-bit range");
     }
+    return static_cast<std::int32_t>(value);
+}
+
+[[nodiscard]] std::int32_t resolve_immediate(
+    const Operand& operand, const Labels& labels, std::int32_t pc, std::string_view mnemonic, bool pc_relative
+) {
+    if (operand.kind == OperandKind::Number) return checked_i32(operand.number, "numeric immediate");
 
     const auto label = labels.find(operand.ident);
     if (label == labels.end()) {
@@ -147,7 +161,17 @@ using Labels = std::unordered_map<std::string, std::int32_t>;
         );
     }
 
-    return label->second - pc;
+    if (pc_relative) {
+        if (label->second.kind != LabelKind::Code) {
+            throw std::runtime_error(
+                "cannot use data label '" + operand.ident + "' as branch target in instruction '" +
+                std::string(mnemonic) + "'"
+            );
+        }
+        return label->second.value - pc;
+    }
+
+    return label->second.value;
 }
 
 [[nodiscard]] std::uint32_t
@@ -192,6 +216,19 @@ encode_immediate(std::uint32_t opcode, std::uint32_t field1, std::uint32_t field
     return *main;
 }
 
+[[nodiscard]] const Section* data_section(const Ast& ast) {
+    const Section* data = nullptr;
+
+    for (const Section& section : ast.sections) {
+        if (section.name != "data") continue;
+
+        if (data != nullptr) throw std::runtime_error("multiple .data sections");
+        data = &section;
+    }
+
+    return data;
+}
+
 [[nodiscard]] const Instruction& instruction_from_statement(const Statement& statement) {
     if (!statement.operation.has_value()) {
         throw std::runtime_error("main section contains a label without an instruction");
@@ -204,13 +241,12 @@ encode_immediate(std::uint32_t opcode, std::uint32_t field1, std::uint32_t field
     return std::get<Instruction>(*statement.operation);
 }
 
-[[nodiscard]] Labels collect_labels(const Section& section) {
-    Labels labels;
+void collect_code_labels(const Section& section, Labels& labels) {
     std::int32_t pc = 0;
 
     for (const Statement& statement : section.statements) {
         if (statement.label.has_value()) {
-            const auto [_, inserted] = labels.emplace(*statement.label, pc);
+            const auto [_, inserted] = labels.emplace(*statement.label, Label{LabelKind::Code, pc});
             if (!inserted) throw std::runtime_error("duplicate label '" + *statement.label + "'");
         }
 
@@ -223,7 +259,44 @@ encode_immediate(std::uint32_t opcode, std::uint32_t field1, std::uint32_t field
             pc += 4;
         }
     }
+}
 
+[[nodiscard]] std::size_t directive_size(const Directive& directive) {
+    if (directive.name == "byte") return directive.operands.size();
+    if (directive.name == "quad") return directive.operands.size() * 8;
+    if (directive.name == "zero") {
+        if (directive.operands.size() != 1 || directive.operands[0].kind != OperandKind::Number) {
+            throw std::runtime_error("directive '.zero' expects one numeric operand");
+        }
+        if (directive.operands[0].number < 0) throw std::runtime_error("directive '.zero' size cannot be negative");
+        return static_cast<std::size_t>(directive.operands[0].number);
+    }
+
+    throw std::runtime_error("unknown data directive '." + directive.name + "'");
+}
+
+void collect_data_labels(const Section* section, Labels& labels) {
+    if (section == nullptr) return;
+
+    std::int64_t offset = 0;
+    for (const Statement& statement : section->statements) {
+        if (statement.label.has_value()) {
+            const auto [_, inserted] =
+                labels.emplace(*statement.label, Label{LabelKind::Data, checked_i32(offset, "data label offset")});
+            if (!inserted) throw std::runtime_error("duplicate label '" + *statement.label + "'");
+        }
+
+        if (!statement.operation.has_value()) continue;
+        const auto* directive = std::get_if<Directive>(&*statement.operation);
+        if (directive == nullptr) throw std::runtime_error(".data section cannot contain instructions");
+        offset += static_cast<std::int64_t>(directive_size(*directive));
+    }
+}
+
+[[nodiscard]] Labels collect_labels(const Section& main, const Section* data) {
+    Labels labels;
+    collect_code_labels(main, labels);
+    collect_data_labels(data, labels);
     return labels;
 }
 
@@ -295,9 +368,68 @@ encode_immediate(std::uint32_t opcode, std::uint32_t field1, std::uint32_t field
     throw std::runtime_error("unsupported instruction '" + instruction.mnemonic + "'");
 }
 
-std::vector<std::uint32_t> Compiler::compile() const {
+void append_u64(std::vector<std::uint8_t>& data, std::uint64_t value) {
+    for (std::size_t i = 0; i < 8; ++i) {
+        data.push_back(static_cast<std::uint8_t>((value >> (i * 8U)) & 0xFFU));
+    }
+}
+
+[[nodiscard]] std::uint64_t data_number(const Operand& operand, const Labels& labels, std::string_view directive) {
+    if (operand.kind == OperandKind::Number) return static_cast<std::uint64_t>(operand.number);
+
+    const auto label = labels.find(operand.ident);
+    if (label == labels.end()) {
+        throw std::runtime_error("unknown label '" + operand.ident + "' in directive '." + std::string(directive) + "'");
+    }
+    return static_cast<std::uint64_t>(label->second.value);
+}
+
+void compile_data_directive(const Directive& directive, const Labels& labels, std::vector<std::uint8_t>& data) {
+    if (directive.name == "byte") {
+        for (const Operand& operand : directive.operands) {
+            const std::uint64_t value = data_number(operand, labels, directive.name);
+            if (value > 0xFFU) throw std::runtime_error("directive '.byte' operand out of range");
+            data.push_back(static_cast<std::uint8_t>(value));
+        }
+        return;
+    }
+
+    if (directive.name == "quad") {
+        for (const Operand& operand : directive.operands) {
+            append_u64(data, data_number(operand, labels, directive.name));
+        }
+        return;
+    }
+
+    if (directive.name == "zero") {
+        if (directive.operands.size() != 1 || directive.operands[0].kind != OperandKind::Number) {
+            throw std::runtime_error("directive '.zero' expects one numeric operand");
+        }
+        if (directive.operands[0].number < 0) throw std::runtime_error("directive '.zero' size cannot be negative");
+        data.insert(data.end(), static_cast<std::size_t>(directive.operands[0].number), 0);
+        return;
+    }
+
+    throw std::runtime_error("unknown data directive '." + directive.name + "'");
+}
+
+[[nodiscard]] std::vector<std::uint8_t> compile_data(const Section* section, const Labels& labels) {
+    std::vector<std::uint8_t> data;
+    if (section == nullptr) return data;
+
+    for (const Statement& statement : section->statements) {
+        if (!statement.operation.has_value()) continue;
+        const auto* directive = std::get_if<Directive>(&*statement.operation);
+        if (directive == nullptr) throw std::runtime_error(".data section cannot contain instructions");
+        compile_data_directive(*directive, labels, data);
+    }
+    return data;
+}
+
+ProgramImage Compiler::compile_program() const {
     const Section& main = main_section(ast);
-    const Labels labels = collect_labels(main);
+    const Section* data = data_section(ast);
+    const Labels labels = collect_labels(main, data);
 
     std::vector<std::uint32_t> machine_code;
     machine_code.reserve(main.statements.size());
@@ -311,7 +443,11 @@ std::vector<std::uint32_t> Compiler::compile() const {
         pc += 4;
     }
 
-    return machine_code;
+    return ProgramImage{compile_data(data, labels), std::move(machine_code), 0};
+}
+
+std::vector<std::uint32_t> Compiler::compile() const {
+    return compile_program().code;
 }
 
 } // namespace zenith::assembler

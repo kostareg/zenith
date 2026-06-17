@@ -88,10 +88,42 @@ int main() {
     }
 }
 
-TEST(Compiler, RejectsGlobalVariables) {
+TEST(Compiler, CompilesGlobalScalarsAndArraysToDataSection) {
     Compiler compiler;
 
-    EXPECT_THROW(static_cast<void>(compiler.compile("int global = 1;")), std::runtime_error);
+    const std::string assembly = compiler.compile(R"(
+enum Mode { MODE_A = 7 };
+int global = MODE_A;
+int values[] = {1, 2};
+
+void bump() {
+  global += values[1];
+}
+
+int main() {
+  int global = 3;
+  bump();
+  values[0] = *(&values[0]) + global;
+  return values[0];
+}
+)");
+
+    EXPECT_NE(assembly.find(".data"), std::string::npos);
+    EXPECT_NE(assembly.find("G0:"), std::string::npos);
+    EXPECT_NE(assembly.find("  .quad 7"), std::string::npos);
+    EXPECT_NE(assembly.find("  .quad 1"), std::string::npos);
+    EXPECT_NE(assembly.find("  .quad 2"), std::string::npos);
+    EXPECT_NE(assembly.find(".main"), std::string::npos);
+    EXPECT_NE(assembly.find("l64"), std::string::npos);
+    EXPECT_NE(assembly.find("s64"), std::string::npos);
+}
+
+TEST(Compiler, RejectsUnsupportedGlobalForms) {
+    Compiler compiler;
+
+    EXPECT_THROW(static_cast<void>(compiler.compile("static int global; int main() { return 0; }")), std::runtime_error);
+    EXPECT_THROW(static_cast<void>(compiler.compile("int global = main(); int main() { return 0; }")), std::runtime_error);
+    EXPECT_THROW(static_cast<void>(compiler.compile("struct Pair { int x; } pair; int main() { return 0; }")), std::runtime_error);
 }
 
 } // namespace

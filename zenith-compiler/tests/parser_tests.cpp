@@ -60,7 +60,7 @@ int add(int a, int b) {
 
 TEST(Parser, BuildsGlobalsStructsEnumsAndFunctionDeclarations) {
     Ast ast = parse_source(R"(
-static unsigned int counter = 1;
+unsigned int counter = 1;
 struct Pair {
   int left;
   int right;
@@ -76,7 +76,7 @@ int *lookup(int key);
 
     const auto* counter = std::get_if<VariableDeclaration>(&ast.declarations[0]);
     ASSERT_NE(counter, nullptr);
-    EXPECT_TRUE(counter->is_static);
+    EXPECT_FALSE(counter->is_static);
     ASSERT_NE(counter->type, nullptr);
     ASSERT_EQ(counter->type->primitive_specifiers.size(), 2);
     EXPECT_EQ(counter->type->primitive_specifiers[0], PrimitiveType::Unsigned);
@@ -109,6 +109,10 @@ int *lookup(int key);
     ASSERT_EQ(lookup->parameters.size(), 1);
     ASSERT_TRUE(lookup->parameters[0].declarator.name.has_value());
     EXPECT_EQ(*lookup->parameters[0].declarator.name, "key");
+}
+
+TEST(Parser, RejectsStaticAtFileScope) {
+    EXPECT_THROW(parse_source("static int counter = 1;"), std::runtime_error);
 }
 
 TEST(Parser, BuildsForSwitchCaseAndDefaultStatements) {
