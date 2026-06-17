@@ -396,7 +396,8 @@ const cLikeLanguage = StreamLanguage.define<CStreamState>({
 const DEFAULT_ZENITH_C = `#include <stdio.h>
 
 int main() {
-    printf("hello world!");
+    int ints[1] = {9};
+    printf_ints("%d hello world!", ints);
     return 0;
 }
 `;

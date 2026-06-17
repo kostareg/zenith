@@ -326,6 +326,50 @@ void __zenith_libc_draw_ascii_char(char c) {
     }
 }
 
+char __zenith_libc_int_to_char(int digit) {
+    if (digit < 0) return '?';
+    if (digit > 9) return '?';
+
+    return '0' + digit;
+}
+
+void __zenith_libc_print_char(char c) {
+    if (c == '\n') {
+        __zenith_libc_cursor_x = 0;
+        __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 10;
+        return;
+    }
+
+    __zenith_libc_draw_ascii_char(c);
+    __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+}
+
+void __zenith_libc_print_int(int value) {
+    char digits[12];
+    int count = 0;
+
+    if (value == 0) {
+        __zenith_libc_print_char('0');
+        return;
+    }
+
+    if (value < 0) {
+        __zenith_libc_print_char('-');
+        value = -value;
+    }
+
+    while (value > 0) {
+        digits[count] = __zenith_libc_int_to_char(value % 10);
+        value = value / 10;
+        count = count + 1;
+    }
+
+    while (count > 0) {
+        count = count - 1;
+        __zenith_libc_print_char(digits[count]);
+    }
+}
+
 /// @brief print characters to screen
 /// @param word string to print
 ///
@@ -345,7 +389,36 @@ void printf(char *word) {
             __zenith_libc_draw_ascii_char(*word);
             __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
         }
-        word++;
+        ++word;
+    }
+}
+
+/// @brief print integer to screen
+/// @param word string to print
+/// @param xs list of integers to print
+///
+/// Since Zenith C doesn't have varargs, we're unable to implement the usual integer substitution in printf. To work
+/// around this, we can take an array of integers and use that as our "variable arguments". However, this would require
+/// each `printf` call to provide at least a null pointer, which is annoying at best. So, when users would like to
+/// print an integer with variable arguments, they should just call this function, leaving the regular printf
+/// untouched.
+void printf_ints(char* word, int* xs) {
+    uint8_t i = 0;
+    while (*word) {
+        if (*word == '\n') {
+            __zenith_libc_cursor_x = 0;
+            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 3;
+        } else if (*word == '%') {
+            ++word;
+            if (*word == 'd') {
+                __zenith_libc_print_int(xs[i]);
+                ++i;
+            }
+        } else {
+            __zenith_libc_draw_ascii_char(*word);
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+        }
+        ++word;
     }
 }
 
