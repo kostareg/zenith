@@ -17,6 +17,10 @@ const FRAMEBUFFER_PREVIEW_WIDTH = 320;
 const FRAMEBUFFER_PREVIEW_HEIGHT = 180;
 const FRAMEBUFFER_WIDTH = 1920;
 const FRAMEBUFFER_HEIGHT = 1080;
+const INSTRUCTION_FRAME_HISTORY_LIMIT = 90;
+const INSTRUCTION_CHART_WIDTH = 280;
+const INSTRUCTION_CHART_HEIGHT = 72;
+const INSTRUCTION_CHART_PADDING = 6;
 
 const REGISTER_NAMES = [
     "zero",
@@ -261,6 +265,11 @@ type ParseResult = {
     errors: Array<string>;
 };
 
+type ChartPoint = {
+    x: number;
+    y: number;
+};
+
 function createZeroRegisters() {
     return Array.from({ length: REGISTER_COUNT }, () => 0n);
 }
@@ -348,6 +357,126 @@ function unknownErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
 }
 
+function appendInstructionFrameSample(history: Array<number>, sample: number) {
+    return [...history.slice(-(INSTRUCTION_FRAME_HISTORY_LIMIT - 1)), sample];
+}
+
+function createInstructionChartPoints(samples: Array<number>): Array<ChartPoint> {
+    if (samples.length === 0) return [];
+
+    const maxSample = Math.max(1, ...samples);
+    const plotWidth = INSTRUCTION_CHART_WIDTH - INSTRUCTION_CHART_PADDING * 2;
+    const plotHeight = INSTRUCTION_CHART_HEIGHT - INSTRUCTION_CHART_PADDING * 2;
+
+    return samples.map((sample, index) => {
+        const x =
+            samples.length === 1
+                ? INSTRUCTION_CHART_WIDTH - INSTRUCTION_CHART_PADDING
+                : INSTRUCTION_CHART_PADDING + (index * plotWidth) / (samples.length - 1);
+        const y = INSTRUCTION_CHART_PADDING + (1 - sample / maxSample) * plotHeight;
+
+        return { x, y };
+    });
+}
+
+function createInstructionChartPath(points: Array<ChartPoint>) {
+    return points.map(({ x, y }, index) => `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+}
+
+function InstructionFrameChart({ samples, isRunning }: { samples: Array<number>; isRunning: boolean }) {
+    const chart = useMemo(() => {
+        const points = createInstructionChartPoints(samples);
+
+        return {
+            path: createInstructionChartPath(points),
+            points,
+        };
+    }, [samples]);
+    const latest = samples.at(-1) ?? 0;
+    const peak = samples.length > 0 ? Math.max(...samples) : 0;
+    const trough = samples.length > 0 ? Math.min(...samples) : 0;
+    const average =
+        samples.length > 0 ? Math.round(samples.reduce((total, sample) => total + sample, 0) / samples.length) : 0;
+
+    return (
+        <section className="mt-4 rounded-md border bg-background">
+            <div className="flex items-center justify-between border-b px-3 py-2">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Emulator instructions/frame
+                </h3>
+                <span className="font-mono text-[11px] text-muted-foreground">{isRunning ? "live" : "paused"}</span>
+            </div>
+            <div className="p-3">
+                <div className="relative h-20 rounded-md border bg-muted/20 p-2">
+                    <svg
+                        aria-label={`Instructions executed per frame. Latest ${latest}, peak ${peak}, trough ${trough}, average ${average}.`}
+                        className="h-full w-full"
+                        preserveAspectRatio="none"
+                        role="img"
+                        viewBox={`0 0 ${INSTRUCTION_CHART_WIDTH} ${INSTRUCTION_CHART_HEIGHT}`}
+                    >
+                        <line
+                            stroke="var(--border)"
+                            strokeWidth="1"
+                            vectorEffect="non-scaling-stroke"
+                            x1={INSTRUCTION_CHART_PADDING}
+                            x2={INSTRUCTION_CHART_WIDTH - INSTRUCTION_CHART_PADDING}
+                            y1={INSTRUCTION_CHART_PADDING}
+                            y2={INSTRUCTION_CHART_PADDING}
+                        />
+                        <line
+                            stroke="var(--border)"
+                            strokeWidth="1"
+                            vectorEffect="non-scaling-stroke"
+                            x1={INSTRUCTION_CHART_PADDING}
+                            x2={INSTRUCTION_CHART_WIDTH - INSTRUCTION_CHART_PADDING}
+                            y1={INSTRUCTION_CHART_HEIGHT - INSTRUCTION_CHART_PADDING}
+                            y2={INSTRUCTION_CHART_HEIGHT - INSTRUCTION_CHART_PADDING}
+                        />
+                        {chart.path ? (
+                            <path
+                                d={chart.path}
+                                fill="none"
+                                stroke="var(--chart-2)"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                vectorEffect="non-scaling-stroke"
+                            />
+                        ) : null}
+                        {chart.points.length === 1 ? (
+                            <circle cx={chart.points[0].x} cy={chart.points[0].y} fill="var(--chart-2)" r="2.5" />
+                        ) : null}
+                    </svg>
+                    {samples.length === 0 ? (
+                        <div className="absolute inset-0 flex items-center justify-center font-mono text-[11px] text-muted-foreground">
+                            No frame samples
+                        </div>
+                    ) : null}
+                </div>
+                <div className="mt-2 grid grid-cols-4 gap-2 font-mono text-[11px]">
+                    <div className="min-w-0">
+                        <span className="text-muted-foreground">latest</span>
+                        <span className="block truncate text-foreground">{latest.toLocaleString()}</span>
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-muted-foreground">avg</span>
+                        <span className="block truncate text-foreground">{average.toLocaleString()}</span>
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-muted-foreground">peak</span>
+                        <span className="block truncate text-foreground">{peak.toLocaleString()}</span>
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-muted-foreground">trough</span>
+                        <span className="block truncate text-foreground">{trough.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
 export function App() {
     const assembler = useZenithAssembler();
     const emulator = useZenithEmulator();
@@ -365,6 +494,7 @@ export function App() {
     const [lastMessage, setLastMessage] = useState("");
     const framebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [framebufferRevision, setFramebufferRevision] = useState(0);
+    const [instructionsPerFrame, setInstructionsPerFrame] = useState<Array<number>>([]);
 
     const parseResult = useMemo(() => parseProgram(machineCode), [machineCode]);
     const activeInstruction = parseResult.instructions[instructionIndex] ?? null;
@@ -520,6 +650,7 @@ export function App() {
             setRegisters(nextRegisters);
             setInstructionIndex(nextInstructionIndex);
             setFramebufferRevision((revision) => revision + 1);
+            setInstructionsPerFrame((history) => appendInstructionFrameSample(history, executed));
 
             if (executed > 0) {
                 setLastMessage(
@@ -539,6 +670,7 @@ export function App() {
         setRegisters(emulator?.getRegisters() ?? createZeroRegisters());
         setInstructionIndex(0);
         setFramebufferRevision((revision) => revision + 1);
+        setInstructionsPerFrame([]);
         setLastMessage("Program counter reset to the first parsed machine-code line.");
     }
 
@@ -597,6 +729,7 @@ export function App() {
         setInstructionIndex(0);
         setMachineCode(compiled);
         setFramebufferRevision((revision) => revision + 1);
+        setInstructionsPerFrame([]);
 
         if (
             shouldRun &&
@@ -797,6 +930,7 @@ export function App() {
                                 setAssemblyError(null);
                                 setAssemblyIsLoaded(false);
                                 setIsRunning(false);
+                                setInstructionsPerFrame([]);
                                 setLastMessage("Zenith C changed. Compile and load before running those changes.");
                             }}
                             value={zenithCSource}
@@ -818,6 +952,7 @@ export function App() {
                                 setAssemblyError(null);
                                 setAssemblyIsLoaded(false);
                                 setIsRunning(false);
+                                setInstructionsPerFrame([]);
                                 setLastMessage("Assembly changed. Compile and load before running those changes.");
                             }}
                             value={assemblySource}
@@ -840,6 +975,7 @@ export function App() {
                                 setAssemblyError(null);
                                 setAssemblyIsLoaded(false);
                                 setInstructionIndex(0);
+                                setInstructionsPerFrame([]);
                                 setLastMessage("Machine code changed. Reset or step from the first parsed line.");
                             }}
                             value={machineCode}
@@ -923,6 +1059,7 @@ export function App() {
                             </div>
                         </div>
                     </section>
+                    <InstructionFrameChart isRunning={isRunning} samples={instructionsPerFrame} />
                 </div>
             </aside>
         </main>
