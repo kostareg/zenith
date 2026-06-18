@@ -55,10 +55,68 @@ std::uint64_t Emulator::signed_divide(std::uint64_t lhs_bits, std::uint64_t rhs_
     return std::bit_cast<std::uint64_t>(lhs / rhs);
 }
 
-bool Emulator::read_memory(std::uint64_t address, std::size_t width, std::uint64_t& value) const noexcept {
+bool Emulator::read_keyboard_register(std::uint64_t address, std::size_t width, std::uint64_t& value) noexcept {
+    const auto read_register =
+        [address, width](std::uint64_t register_address, std::uint32_t register_value, std::uint64_t& output) noexcept {
+            if (address < register_address) return false;
+
+            const auto offset = address - register_address;
+            if (offset > 4 || width > 4 || offset > 4 - width) return false;
+
+            output = (static_cast<std::uint64_t>(register_value) >> (offset * 8U)) & ((1ULL << (width * 8U)) - 1ULL);
+            return true;
+        };
+
+    if (read_register(kKeyboardStatusControlAddress, keyboard_status(), value)) return true;
+    if (address >= kKeyboardKeyEventAddress && address < kKeyboardKeyEventAddress + 4) {
+        return read_register(kKeyboardKeyEventAddress, pop_key_event(), value);
+    }
+    return read_register(kKeyboardFifoCountAddress, static_cast<std::uint32_t>(keyboard_fifo_count), value);
+}
+
+bool Emulator::write_keyboard_register(std::uint64_t address, std::size_t width, std::uint64_t value) noexcept {
+    if (address > kKeyboardStatusControlAddress || width == 0) return false;
+
+    const auto last_byte = address + width - 1;
+    if (last_byte < kKeyboardStatusControlAddress || last_byte >= kKeyboardStatusControlAddress + 4) return false;
+
+    const auto register_byte_offset = kKeyboardStatusControlAddress - address;
+    const auto control_byte = static_cast<std::uint8_t>((value >> (register_byte_offset * 8U)) & 0xFFU);
+
+    keyboard_enabled = (control_byte & kKeyboardEnableBit) != 0;
+    if ((control_byte & kKeyboardOverflowBit) != 0) keyboard_overflow = false;
+    if ((control_byte & kKeyboardClearFifoBit) != 0) {
+        keyboard_fifo_head = 0;
+        keyboard_fifo_count = 0;
+    }
+
+    return true;
+}
+
+std::uint32_t Emulator::keyboard_status() const noexcept {
+    std::uint32_t status = 0;
+    if (keyboard_fifo_count > 0) status |= kKeyboardReadyBit;
+    if (keyboard_fifo_count == keyboard_fifo.size()) status |= kKeyboardFullBit;
+    if (keyboard_overflow) status |= kKeyboardOverflowBit;
+    if (keyboard_enabled) status |= kKeyboardEnableBit;
+    return status;
+}
+
+std::uint32_t Emulator::pop_key_event() noexcept {
+    if (keyboard_fifo_count == 0) return 0;
+
+    const auto event = keyboard_fifo[keyboard_fifo_head];
+    keyboard_fifo_head = (keyboard_fifo_head + 1) % keyboard_fifo.size();
+    --keyboard_fifo_count;
+    return event;
+}
+
+bool Emulator::read_memory(std::uint64_t address, std::size_t width, std::uint64_t& value) noexcept {
     bool ok = false;
     value = read_little_endian(memory, address, width, ok);
     if (ok) return true;
+
+    if (read_keyboard_register(address, width, value)) return true;
 
     if (address >= kFramebufferPixelBase) {
         const auto offset = address - kFramebufferPixelBase;
@@ -94,6 +152,8 @@ bool Emulator::read_memory(std::uint64_t address, std::size_t width, std::uint64
 bool Emulator::write_memory(std::uint64_t address, std::size_t width, std::uint64_t value) noexcept {
     if (write_little_endian(memory, address, width, value)) return true;
 
+    if (write_keyboard_register(address, width, value)) return true;
+
     if (address >= kFramebufferPixelBase) {
         const auto offset = address - kFramebufferPixelBase;
         if (width > framebuffer.size() || offset > framebuffer.size() - width) return false;
@@ -123,7 +183,12 @@ void Emulator::reset() {
     registers.fill(0);
     memory.fill(0);
     framebuffer.fill(0);
+    keyboard_fifo.fill(0);
+    keyboard_fifo_head = 0;
+    keyboard_fifo_count = 0;
     framebuffer_enabled = false;
+    keyboard_enabled = false;
+    keyboard_overflow = false;
 }
 
 bool Emulator::load_data(const std::vector<std::uint8_t>& data) noexcept {
@@ -133,6 +198,29 @@ bool Emulator::load_data(const std::vector<std::uint8_t>& data) noexcept {
 
     std::copy(data.begin(), data.end(), memory.begin());
     return true;
+}
+
+bool Emulator::push_key_event(std::uint16_t key_code, bool pressed, bool repeat) noexcept {
+    if (!keyboard_enabled) return false;
+
+    if (keyboard_fifo_count == keyboard_fifo.size()) {
+        keyboard_overflow = true;
+        return false;
+    }
+
+    auto event = static_cast<std::uint32_t>(key_code);
+    if (pressed) event |= kKeyboardPressedBit;
+    if (repeat) event |= kKeyboardRepeatBit;
+
+    const auto tail = (keyboard_fifo_head + keyboard_fifo_count) % keyboard_fifo.size();
+    keyboard_fifo[tail] = event;
+    ++keyboard_fifo_count;
+    return true;
+}
+
+bool Emulator::push_ps2_scan_code(std::uint8_t scan_code) noexcept {
+    static_cast<void>(scan_code);
+    return push_key_event(kKeyboardHardwarePlaceholderKeyCode, true, false);
 }
 
 void Emulator::step(std::uint32_t instruction) {
@@ -458,6 +546,8 @@ EMSCRIPTEN_BINDINGS(zenith_emulator) {
         .constructor<>()
         .function("reset", &zenith::emulator::Emulator::reset)
         .function("loadData", &load_data)
+        .function("pushKeyEvent", &zenith::emulator::Emulator::push_key_event)
+        .function("pushPs2ScanCode", &zenith::emulator::Emulator::push_ps2_scan_code)
         .function("step", &zenith::emulator::Emulator::step)
         .function("getRegisters", &get_registers)
         .function("getFramebuffer", &get_framebuffer)

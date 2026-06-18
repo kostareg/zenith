@@ -1525,7 +1525,10 @@ class CodeGenerator {
                     }
                     return StorageInfo{};
                 },
-                [](const UnaryExpression&) -> StorageInfo {
+                [this](const UnaryExpression& unary) -> StorageInfo {
+                    if (unary.op == UnaryOperator::Dereference) {
+                        return storage_for_dereference(*unary.operand);
+                    }
                     return StorageInfo{};
                 },
                 [this](const IndexExpression& index) -> StorageInfo {

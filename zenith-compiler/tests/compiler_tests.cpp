@@ -118,6 +118,20 @@ int main() {
     EXPECT_NE(assembly.find("s64"), std::string::npos);
 }
 
+TEST(Compiler, StoresThroughTypedPointersUsingPointeeWidth) {
+    Compiler compiler;
+
+    const std::string assembly = compiler.compile(R"(
+int main() {
+  uint32_t *control = 0xFFFFFFFFFFA00000ULL;
+  *control = 0x8;
+  return 0;
+}
+)");
+
+    EXPECT_NE(assembly.find("s32 t0, t1, 0"), std::string::npos);
+}
+
 TEST(Compiler, PacksByteSizedGlobalArrays) {
     Compiler compiler;
 

@@ -3,9 +3,10 @@ import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/
 import { tags } from "@lezer/highlight";
 import { Hammer, Maximize2, Pause, RotateCcw, SkipForward, StepForward, X } from "lucide-react";
 import { EditorView, Decoration, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider";
 import { useZenithCompiler } from "@/components/wasm/zenith-compiler-provider";
@@ -25,6 +26,61 @@ const INSTRUCTION_CHART_WIDTH = 280;
 const INSTRUCTION_CHART_HEIGHT = 72;
 const INSTRUCTION_CHART_PADDING = 6;
 const EDITOR_MINIMAP_WIDTH = 52;
+
+const KEYBOARD_HID_USAGE_IDS: Readonly<Record<string, number>> = {
+    KeyA: 0x04,
+    KeyB: 0x05,
+    KeyC: 0x06,
+    KeyD: 0x07,
+    KeyE: 0x08,
+    KeyF: 0x09,
+    KeyG: 0x0a,
+    KeyH: 0x0b,
+    KeyI: 0x0c,
+    KeyJ: 0x0d,
+    KeyK: 0x0e,
+    KeyL: 0x0f,
+    KeyM: 0x10,
+    KeyN: 0x11,
+    KeyO: 0x12,
+    KeyP: 0x13,
+    KeyQ: 0x14,
+    KeyR: 0x15,
+    KeyS: 0x16,
+    KeyT: 0x17,
+    KeyU: 0x18,
+    KeyV: 0x19,
+    KeyW: 0x1a,
+    KeyX: 0x1b,
+    KeyY: 0x1c,
+    KeyZ: 0x1d,
+    Digit1: 0x1e,
+    Digit2: 0x1f,
+    Digit3: 0x20,
+    Digit4: 0x21,
+    Digit5: 0x22,
+    Digit6: 0x23,
+    Digit7: 0x24,
+    Digit8: 0x25,
+    Digit9: 0x26,
+    Digit0: 0x27,
+    Enter: 0x28,
+    Escape: 0x29,
+    Backspace: 0x2a,
+    Tab: 0x2b,
+    Space: 0x2c,
+    Minus: 0x2d,
+    Equal: 0x2e,
+    BracketLeft: 0x2f,
+    BracketRight: 0x30,
+    Backslash: 0x31,
+    Semicolon: 0x33,
+    Quote: 0x34,
+    Backquote: 0x35,
+    Comma: 0x36,
+    Period: 0x37,
+    Slash: 0x38,
+};
 
 function paintFramebufferPreview(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
     const context = canvas.getContext("2d");
@@ -747,6 +803,9 @@ export function App() {
     const [framebufferRevision, setFramebufferRevision] = useState(0);
     const [fullscreenFramebufferIsOpen, setFullscreenFramebufferIsOpen] = useState(false);
     const [instructionsPerFrame, setInstructionsPerFrame] = useState<Array<number>>([]);
+    const [keyboardInput, setKeyboardInput] = useState("");
+    const [keyboardAcceptedCount, setKeyboardAcceptedCount] = useState(0);
+    const [keyboardDroppedCount, setKeyboardDroppedCount] = useState(0);
 
     const parseResult = useMemo(() => parseProgram(machineCode), [machineCode]);
     const activeInstruction = parseResult.instructions[instructionIndex] ?? null;
@@ -958,6 +1017,9 @@ export function App() {
         setInstructionIndex(0);
         setFramebufferRevision((revision) => revision + 1);
         setInstructionsPerFrame([]);
+        setKeyboardInput("");
+        setKeyboardAcceptedCount(0);
+        setKeyboardDroppedCount(0);
         setLastMessage("Program counter reset to the first parsed machine-code line.");
     }
 
@@ -1022,6 +1084,9 @@ export function App() {
         setLoadedData(program.data);
         setFramebufferRevision((revision) => revision + 1);
         setInstructionsPerFrame([]);
+        setKeyboardInput("");
+        setKeyboardAcceptedCount(0);
+        setKeyboardDroppedCount(0);
 
         if (
             shouldRun &&
@@ -1033,6 +1098,18 @@ export function App() {
         }
 
         return compiledParseResult;
+    }
+
+    function handleKeyboardInput(event: ReactKeyboardEvent<HTMLInputElement>) {
+        const keyCode = KEYBOARD_HID_USAGE_IDS[event.code];
+        if (keyCode === undefined) return;
+
+        const accepted = emulator?.pushKeyEvent(keyCode, true, event.repeat) ?? false;
+        if (accepted) {
+            setKeyboardAcceptedCount((count) => count + 1);
+        } else {
+            setKeyboardDroppedCount((count) => count + 1);
+        }
     }
 
     function compileAndLoadAssembly() {
@@ -1371,6 +1448,31 @@ export function App() {
                                     <span>format</span>
                                     <span className="text-right">RGB888</span>
                                 </div>
+                            </div>
+                        </section>
+                        <section className="mt-4 rounded-lg border bg-background">
+                            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Keyboard
+                                </h3>
+                                <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
+                                    <span>{keyboardAcceptedCount} sent</span>
+                                    <span>{keyboardDroppedCount} dropped</span>
+                                </div>
+                            </div>
+                            <div className="p-3">
+                                <Input
+                                    aria-label="Keyboard input"
+                                    autoCapitalize="off"
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    className="font-mono"
+                                    disabled={!emulator}
+                                    onChange={(event) => setKeyboardInput(event.target.value)}
+                                    onKeyDown={handleKeyboardInput}
+                                    spellCheck={false}
+                                    value={keyboardInput}
+                                />
                             </div>
                         </section>
                         <InstructionFrameChart isRunning={isRunning} samples={instructionsPerFrame} />
