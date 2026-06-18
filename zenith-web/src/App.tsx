@@ -11,6 +11,9 @@ import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider"
 import { useZenithCompiler } from "@/components/wasm/zenith-compiler-provider";
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
 
+// todo: find a better way to import the kernel, allow users to run userspace programs
+import zenithKernel from "@/../public/zenith-kernel/main.c?raw"
+
 const REGISTER_COUNT = 32;
 const RUN_FRAME_BUDGET_MS = 8;
 const FRAMEBUFFER_PREVIEW_WIDTH = 320;
@@ -393,22 +396,6 @@ const cLikeLanguage = StreamLanguage.define<CStreamState>({
     },
 });
 
-const DEFAULT_ZENITH_C = `#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int main() {
-    char* a = "hello";
-    char* b = "helo";
-    if (strcmp(a, b)) {
-        printf("yay");
-    }
-
-    int ints[2] = {rand(), 21};
-    printf_ints("%d %dhello world!", ints);
-    return 0;
-}`;
-
 type EditorTab = "zenith-c" | "assembly" | "machine-code";
 
 const EDITOR_TABS: Array<{ id: EditorTab; label: string }> = [
@@ -744,7 +731,7 @@ export function App() {
     const emulator = useZenithEmulator();
     const compiler = useZenithCompiler();
     const [activeTab, setActiveTab] = useState<EditorTab>("zenith-c");
-    const [zenithCSource, setZenithCSource] = useState(DEFAULT_ZENITH_C);
+    const [zenithCSource, setZenithCSource] = useState(zenithKernel);
     const [assemblySource, setAssemblySource] = useState("");
     const [machineCode, setMachineCode] = useState("");
     const [compilerError, setCompilerError] = useState<string | null>(null);
