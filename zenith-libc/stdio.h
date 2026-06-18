@@ -524,14 +524,21 @@ void scanf(char* c) {
             uint32_t pressed = (event >> 16) & 1;
 
             if (key_code == 40) {
+                // enter
                 c[i] = 0;
+                printf("\n");
                 return;
+            } else if (key_code == 42) {
+                --i;
+                continue;
             }
 
             if (pressed) {
                 char ch = hid_to_ascii(key_code);
                 if (ch) {
                     c[i] = ch;
+                    char list[2] = {ch, 0};
+                    printf(list);
                     ++i;
                 }
             }

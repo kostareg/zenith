@@ -9,6 +9,7 @@ int main() {
 
     while (1) {
         char line[100] = {};
+        printf("$ ");
         scanf(line);
         if (strcmp(line, "run-command")) {
             printf("yay\n");
