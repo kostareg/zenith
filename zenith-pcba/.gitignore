@@ -1,0 +1,52 @@
+# Auto-save and backups
+*.bak
+*.bck
+*-bak
+*_bak
+*.kicad_prl-bak
+
+# Lock files
+*.lck
+
+# Autosave files
+_autosave-*
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+.history
+
+# User-specific preferences (do not affect the design)
+*.kicad_prl
+
+# Generated fabrication outputs
+gerbers/
+drill/
+fabrication/
+production/
+plot/
+plots/
+output/
+outputs/
+
+# Generated documentation
+*.gbr
+*.gbl
+*.gbo
+*.gbs
+*.gtl
+*.gto
+*.gts
+*.gm1
+*.gko
+*.drl
+*.map
+*.rpt
+*.pos
+*.csv
+*.ipc
+
+# Operating system files
+.DS_Store
+Thumbs.db
