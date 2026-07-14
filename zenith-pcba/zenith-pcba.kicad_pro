@@ -646,14 +646,9 @@
         "filename": "zenith-pcba.kicad_sch",
         "name": "Root",
         "uuid": "998c5703-2ef0-4484-8ced-1d53dcc65d39"
-      },
-      {
-        "filename": "untitled.kicad_sch",
-        "name": "Untitled",
-        "uuid": "3de28676-11b8-4ba1-bb1b-5da007985b31"
       }
     ],
-    "used_designators": "#PWR1,U1-2",
+    "used_designators": "J1,#PWR1,U1-3",
     "variants": []
   },
   "sheets": [
@@ -662,8 +657,16 @@
       "Root"
     ],
     [
-      "3de28676-11b8-4ba1-bb1b-5da007985b31",
-      "Untitled"
+      "9f121371-24a3-48c8-bf96-57c47161948b",
+      "TODO"
+    ],
+    [
+      "c66f70fc-3f45-45c7-aaad-cd98a793339c",
+      "TODOP"
+    ],
+    [
+      "d152660c-456e-437b-9b9b-57a28d7a418e",
+      "Programmer"
     ]
   ],
   "text_variables": {},
