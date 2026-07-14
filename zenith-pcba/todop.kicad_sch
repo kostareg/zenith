@@ -6000,6 +6000,65 @@
 			(embedded_fonts no)
 		)
 	)
+	(text "NOTE set this differential pair\nas IOSTANDARD=LVCMOS33 to keep\nsignals unrelated."
+		(exclude_from_sim yes)
+		(at 13.208 16.764 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "cc8ab7ca-59ee-4cbf-a043-9a0c6130347d")
+	)
+	(global_label "UARTTX"
+		(shape output)
+		(at 22.86 52.07 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "48f51745-101b-4f0b-a44e-66cb9ed31565")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 13.041 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "UARTRX"
+		(shape input)
+		(at 22.86 49.53 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "543fe7fe-2a43-423e-bae4-89bc765ef59b")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 12.7386 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
 	(symbol
 		(lib_id "FPGA_Xilinx_Artix7:XC7A50T-CSG325")
 		(at 222.25 104.14 0)
@@ -8094,7 +8153,7 @@
 	)
 	(symbol
 		(lib_id "FPGA_Xilinx_Artix7:XC7A50T-CSG325")
-		(at 68.58 93.98 0)
+		(at 73.66 100.33 0)
 		(unit 2)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -8105,7 +8164,7 @@
 		(fields_autoplaced yes)
 		(uuid "55cd356e-e354-4f03-bd1d-3a3e1a445376")
 		(property "Reference" "U1"
-			(at 115.57 95.8849 0)
+			(at 120.65 102.2349 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8116,7 +8175,7 @@
 			)
 		)
 		(property "Value" "XC7A50T-CSG325"
-			(at 115.57 98.4249 0)
+			(at 120.65 104.7749 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8127,7 +8186,7 @@
 			)
 		)
 		(property "Footprint" "Package_BGA:Xilinx_CSG325"
-			(at 68.58 93.98 0)
+			(at 73.66 100.33 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8138,7 +8197,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 68.58 93.98 0)
+			(at 73.66 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8148,7 +8207,7 @@
 			)
 		)
 		(property "Description" "Artix 7 T 50 XC7A50T-CSG325"
-			(at 68.58 93.98 0)
+			(at 73.66 100.33 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
