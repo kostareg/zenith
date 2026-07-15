@@ -8130,6 +8130,18 @@
 		(uuid "8a30ac13-46a5-4bc4-b7d9-adb13d091240")
 	)
 	(junction
+		(at 227.33 69.85)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8cb7f328-e3b4-43b1-b0a9-1d93e8b409d1")
+	)
+	(junction
+		(at 224.79 72.39)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c17aded4-2ecc-460d-b629-dd0d14ca5b38")
+	)
+	(junction
 		(at 125.73 58.42)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8140,8 +8152,16 @@
 		(uuid "06fc64ae-94c1-4118-8c0f-40d50db0fe4a")
 	)
 	(no_connect
+		(at 121.92 53.34)
+		(uuid "134d359e-4df8-4463-8aa7-2fea136960ab")
+	)
+	(no_connect
 		(at 125.73 78.74)
 		(uuid "38f5064c-f7ad-4000-8b85-f0d3664583af")
+	)
+	(no_connect
+		(at 111.76 58.42)
+		(uuid "3f5f184f-e15b-459f-aac1-18165c1d88b0")
 	)
 	(no_connect
 		(at 204.47 71.12)
@@ -8187,7 +8207,7 @@
 	)
 	(wire
 		(pts
-			(xy 229.87 69.85) (xy 223.52 69.85)
+			(xy 229.87 69.85) (xy 227.33 69.85)
 		)
 		(stroke
 			(width 0)
@@ -8217,6 +8237,16 @@
 	)
 	(wire
 		(pts
+			(xy 224.79 72.39) (xy 229.87 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "496315af-cf57-4b65-816b-0cbf55a8b18a")
+	)
+	(wire
+		(pts
 			(xy 102.87 46.99) (xy 97.79 46.99)
 		)
 		(stroke
@@ -8224,6 +8254,26 @@
 			(type default)
 		)
 		(uuid "4a6d4270-be8a-483b-9887-1ee921c750ff")
+	)
+	(wire
+		(pts
+			(xy 124.46 54.61) (xy 121.92 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4efddea1-5d70-4205-b996-afbaca5a0702")
+	)
+	(wire
+		(pts
+			(xy 227.33 93.98) (xy 227.33 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "57f62d3e-932f-4c79-9c87-b20e14ccce10")
 	)
 	(wire
 		(pts
@@ -8237,6 +8287,16 @@
 	)
 	(wire
 		(pts
+			(xy 255.27 72.39) (xy 255.27 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5a42f79c-3cc5-4c5e-8908-fdd208ad482c")
+	)
+	(wire
+		(pts
 			(xy 102.87 73.66) (xy 102.87 46.99)
 		)
 		(stroke
@@ -8247,6 +8307,26 @@
 	)
 	(wire
 		(pts
+			(xy 204.47 73.66) (xy 218.44 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5e3c52f1-2778-415e-a70e-538bc17fc01b")
+	)
+	(wire
+		(pts
+			(xy 227.33 69.85) (xy 223.52 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6236b0ee-2899-455e-af2a-73e399eb6da9")
+	)
+	(wire
+		(pts
 			(xy 121.92 58.42) (xy 125.73 58.42)
 		)
 		(stroke
@@ -8254,6 +8334,26 @@
 			(type default)
 		)
 		(uuid "650eef93-ccb0-44f7-890c-2f09ad0a04b2")
+	)
+	(wire
+		(pts
+			(xy 257.81 69.85) (xy 257.81 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "65b25748-e4e0-4212-97a5-d4ca99dfd35e")
+	)
+	(wire
+		(pts
+			(xy 110.49 54.61) (xy 111.76 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6784409e-3cce-433e-b78c-ece7facf8eb2")
 	)
 	(wire
 		(pts
@@ -8327,7 +8427,7 @@
 	)
 	(wire
 		(pts
-			(xy 222.25 72.39) (xy 229.87 72.39)
+			(xy 222.25 72.39) (xy 224.79 72.39)
 		)
 		(stroke
 			(width 0)
@@ -8344,6 +8444,16 @@
 			(type default)
 		)
 		(uuid "88d5c940-7e14-409d-8d62-d7e3d63293c9")
+	)
+	(wire
+		(pts
+			(xy 218.44 73.66) (xy 218.44 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8a6dbdfa-5696-43ba-9181-b6d9eeee6c1b")
 	)
 	(wire
 		(pts
@@ -8364,6 +8474,26 @@
 			(type default)
 		)
 		(uuid "924299dc-197a-4735-b2fc-dd1956488547")
+	)
+	(wire
+		(pts
+			(xy 224.79 96.52) (xy 224.79 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "947d5b4a-1a20-4a77-a867-eba773af0294")
+	)
+	(wire
+		(pts
+			(xy 257.81 96.52) (xy 224.79 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9aa9dddb-c840-4b20-b0c6-58adf32122a0")
 	)
 	(wire
 		(pts
@@ -8397,6 +8527,16 @@
 	)
 	(wire
 		(pts
+			(xy 218.44 110.49) (xy 220.98 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c11f1429-b534-4727-a531-aaf75f9ae46c")
+	)
+	(wire
+		(pts
 			(xy 204.47 58.42) (xy 207.01 58.42)
 		)
 		(stroke
@@ -8414,6 +8554,16 @@
 			(type default)
 		)
 		(uuid "ce47ae60-9d35-4ad1-a1da-7d9c89626208")
+	)
+	(wire
+		(pts
+			(xy 255.27 93.98) (xy 227.33 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d3188cd6-935f-43d5-8880-42451165a258")
 	)
 	(wire
 		(pts
@@ -8467,6 +8617,16 @@
 	)
 	(wire
 		(pts
+			(xy 252.73 69.85) (xy 257.81 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f88d288a-d715-41d0-b876-9f46e92ce65e")
+	)
+	(wire
+		(pts
 			(xy 204.47 63.5) (xy 207.01 63.5)
 		)
 		(stroke
@@ -8474,6 +8634,16 @@
 			(type default)
 		)
 		(uuid "fd1e323a-6c98-4768-ad56-05d059dfde12")
+	)
+	(wire
+		(pts
+			(xy 252.73 72.39) (xy 255.27 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd4078cf-4c8e-4185-bc90-c35c8bb8933c")
 	)
 	(global_label "UARTTX"
 		(shape input)
@@ -8631,6 +8801,84 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
 					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 229.87 57.15 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "0ad3bfa8-3279-41c0-a0ea-43402cbb323c")
+		(property "Reference" "#PWR09"
+			(at 229.87 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 229.87 62.23 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 229.87 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 229.87 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 229.87 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f2a836ea-096b-430c-9c14-8a7a0ed75eae")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR09")
 					(unit 1)
 				)
 			)
@@ -8869,6 +9117,84 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
 					(reference "C3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 252.73 85.09 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "34530e3a-e6c3-484b-a4ea-dc53f9045ab2")
+		(property "Reference" "#PWR011"
+			(at 252.73 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 252.73 90.17 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 252.73 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 252.73 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 252.73 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c9784b9d-dc15-480b-95ae-92592640f6b0")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR011")
 					(unit 1)
 				)
 			)
@@ -9156,6 +9482,83 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 110.49 54.61 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6bec89e5-8729-4390-9a57-4e7b6aa11292")
+		(property "Reference" "#PWR014"
+			(at 110.49 60.96 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 109.22 58.42 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 110.49 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 110.49 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 110.49 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "09fbba48-c57d-427f-8c0e-f9dffdeff69d")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR014")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "easyeda2kicad:RC0603FR-074K7L")
 		(at 120.65 81.28 0)
 		(unit 1)
@@ -9355,7 +9758,6 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "8a6ebd4c-9590-4870-920c-a10f48add578")
 		(property "Reference" "#PWR04"
 			(at 107.95 59.69 0)
@@ -9369,7 +9771,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 107.95 58.42 0)
+			(at 106.172 56.896 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9418,6 +9820,84 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
 					(reference "#PWR04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 252.73 57.15 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "90be146e-3155-4fa3-b13c-de0cd5727069")
+		(property "Reference" "#PWR010"
+			(at 252.73 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 252.73 62.23 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 252.73 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 252.73 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 252.73 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "db82f0d5-62df-4560-b171-58257e2e6a69")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR010")
 					(unit 1)
 				)
 			)
@@ -9573,6 +10053,161 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
 					(reference "#PWR02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 229.87 85.09 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a5f9c0a5-756a-4538-9184-dc4b93581974")
+		(property "Reference" "#PWR012"
+			(at 229.87 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 229.87 90.17 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 229.87 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 229.87 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 229.87 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "43f2cb93-b38b-4f54-b946-5b1617ee89d8")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR012")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 124.46 54.61 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b140800f-f63f-4872-acb5-92a48646256c")
+		(property "Reference" "#PWR013"
+			(at 124.46 60.96 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 124.46 53.594 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 124.46 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 124.46 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 124.46 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "15383607-c893-4879-b12d-7da6625ad3f8")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR013")
 					(unit 1)
 				)
 			)
