@@ -9642,7 +9642,7 @@
 		)
 		(uuid "061e08b2-b590-4c0c-bb1b-45034f7fe1dc")
 	)
-	(label "VBUSout"
+	(label "VBUSin"
 		(at 165.1 34.29 0)
 		(effects
 			(font
@@ -9672,7 +9672,7 @@
 		)
 		(uuid "3c0ceed0-ecf9-4c72-b316-29a60246bfb2")
 	)
-	(label "VBUSout"
+	(label "VBUSin"
 		(at 167.64 115.57 180)
 		(effects
 			(font
@@ -9732,16 +9732,6 @@
 		)
 		(uuid "88539055-0c11-42a1-8585-9cb75904bc02")
 	)
-	(label "VBUSin"
-		(at 132.08 34.29 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "89146545-c53d-4c99-b5cc-34f18eb45329")
-	)
 	(label "D-in"
 		(at 132.08 41.91 180)
 		(effects
@@ -9782,7 +9772,7 @@
 		)
 		(uuid "c8052c05-b708-4725-b390-e64e2cd041b4")
 	)
-	(label "VBUSout"
+	(label "VBUSin"
 		(at 125.73 115.57 180)
 		(effects
 			(font
@@ -10037,6 +10027,83 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
 					(reference "#PWR09")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 132.08 34.29 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "11229497-17a6-4544-862f-99dd6bda52ab")
+		(property "Reference" "#PWR021"
+			(at 132.08 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 128.778 34.29 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 132.08 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 132.08 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 132.08 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ced4439a-3371-42b3-bd86-52ad602c3b4c")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/d152660c-456e-437b-9b9b-57a28d7a418e"
+					(reference "#PWR021")
 					(unit 1)
 				)
 			)
