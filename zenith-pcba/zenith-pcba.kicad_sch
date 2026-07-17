@@ -6,6 +6,52 @@
 	(paper "A4")
 	(lib_symbols)
 	(sheet
+		(at 82.55 20.32)
+		(size 21.59 166.37)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "4da7db76-b62e-484d-8f1c-6dbd4d716510")
+		(property "Sheetname" "Other"
+			(at 82.55 19.6084 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "other.kicad_sch"
+			(at 82.55 187.2746 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 21.59 20.32)
 		(size 16.51 166.37)
 		(exclude_from_sim no)
@@ -67,7 +113,7 @@
 			(color 0 0 0 0)
 		)
 		(uuid "c66f70fc-3f45-45c7-aaad-cd98a793339c")
-		(property "Sheetname" "TODOP"
+		(property "Sheetname" "IO"
 			(at 44.45 20.8784 0)
 			(show_name no)
 			(do_not_autoplace no)
