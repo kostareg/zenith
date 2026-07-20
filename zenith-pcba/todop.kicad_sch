@@ -12924,6 +12924,152 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:RC0402DR-072K05L"
+			(pin_numbers
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "R"
+				(at 0 5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "RC0402DR-072K05L"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:R0402"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.lcsc.com/datasheet/C471776.pdf"
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Manufacturer" "YAGEO(国巨)"
+				(at 0 -12.7 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "MPN" "RC0402DR-072K05L"
+				(at 0 -15.24 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "LCSC Part" "C471776"
+				(at 0 -17.78 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "RC0402DR-072K05L_0_1"
+				(rectangle
+					(start -2.54 1.27)
+					(end 2.54 -1.27)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin unspecified line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 5.08 0 180)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "easyeda2kicad:RC0402FR-0710KL"
 			(pin_names
 				(hide yes)
@@ -13061,6 +13207,163 @@
 					)
 				)
 				(pin input line
+					(at 5.08 0 180)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "easyeda2kicad:RC0402FR-071K02L"
+			(pin_numbers
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "R"
+				(at 0 5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "RC0402FR-071K02L"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:R0402"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_RC0402FR-071K02L_C163485.html"
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Manufacturer" "YAGEO(国巨)"
+				(at 0 -12.7 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "MPN" "RC0402FR-071K02L"
+				(at 0 -15.24 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "LCSC Part" "C163485"
+				(at 0 -17.78 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "Resistors"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "RC0402FR-071K02L_0_1"
+				(rectangle
+					(start -2.54 1.02)
+					(end 2.54 -1.02)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin unspecified line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
 					(at 5.08 0 180)
 					(length 2.54)
 					(name "2"
@@ -14039,6 +14342,12 @@
 		(uuid "3c38c6e6-5a00-4f8a-9ec9-e287c3b67efa")
 	)
 	(junction
+		(at 36.83 180.34)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "81eba704-255b-42e8-b6aa-edad92394b58")
+	)
+	(junction
 		(at 71.12 44.45)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14063,6 +14372,18 @@
 		(uuid "a3359d3e-b62d-4472-a5a7-81a487685a28")
 	)
 	(junction
+		(at 44.45 180.34)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b167ab86-9d84-4550-9fa7-c3b35734fa38")
+	)
+	(junction
+		(at 29.21 180.34)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c494f515-3988-4aab-bab8-184a0045f2c8")
+	)
+	(junction
 		(at 101.6 44.45)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14075,7 +14396,7 @@
 		(uuid "f98b2efc-4554-4ef9-b2d0-c578c3fb82dc")
 	)
 	(no_connect
-		(at 41.91 171.45)
+		(at 41.91 170.18)
 		(uuid "1724b0e6-4cbc-4567-8a31-310b287ca948")
 	)
 	(no_connect
@@ -14087,19 +14408,19 @@
 		(uuid "53f7bda6-ddaa-4a6f-b3c1-057b13d858ad")
 	)
 	(no_connect
-		(at 64.77 171.45)
+		(at 64.77 170.18)
 		(uuid "b49ded44-5362-45e9-bebe-007df3ee1033")
 	)
 	(no_connect
-		(at 52.07 176.53)
+		(at 52.07 175.26)
 		(uuid "cf95f1df-33a3-4a16-83de-b92dfbbf80a9")
 	)
 	(no_connect
-		(at 54.61 173.99)
+		(at 54.61 172.72)
 		(uuid "d353d739-f102-4ad3-9c8c-720c2abac1a8")
 	)
 	(no_connect
-		(at 34.29 171.45)
+		(at 34.29 170.18)
 		(uuid "e0e13e37-9113-4875-ab1d-292e7ac7e16d")
 	)
 	(no_connect
@@ -14182,6 +14503,16 @@
 	)
 	(wire
 		(pts
+			(xy 36.83 175.26) (xy 36.83 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2670a602-9a1b-4107-b88f-2048b9db7bf2")
+	)
+	(wire
+		(pts
 			(xy 54.61 90.17) (xy 58.42 90.17)
 		)
 		(stroke
@@ -14202,7 +14533,7 @@
 	)
 	(wire
 		(pts
-			(xy 72.39 156.21) (xy 72.39 151.13)
+			(xy 72.39 154.94) (xy 72.39 149.86)
 		)
 		(stroke
 			(width 0)
@@ -14452,6 +14783,16 @@
 	)
 	(wire
 		(pts
+			(xy 44.45 175.26) (xy 44.45 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78beb30d-e5e9-4470-920b-fdf6f63f3eae")
+	)
+	(wire
+		(pts
 			(xy 85.09 135.89) (xy 85.09 134.62)
 		)
 		(stroke
@@ -14502,6 +14843,26 @@
 	)
 	(wire
 		(pts
+			(xy 25.4 180.34) (xy 29.21 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92b0577c-ea5d-466c-b787-f04ab6f39d55")
+	)
+	(wire
+		(pts
+			(xy 29.21 175.26) (xy 29.21 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9554d417-ae52-46f5-8454-ac4c17da20a9")
+	)
+	(wire
+		(pts
 			(xy 106.68 95.25) (xy 100.33 95.25)
 		)
 		(stroke
@@ -14532,13 +14893,23 @@
 	)
 	(wire
 		(pts
-			(xy 69.85 152.4) (xy 67.31 152.4)
+			(xy 69.85 151.13) (xy 67.31 151.13)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "9c45de5d-d9da-4153-8542-8f71e540873a")
+	)
+	(wire
+		(pts
+			(xy 36.83 180.34) (xy 40.64 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9d7e0b3c-0c13-4b1c-8800-0c43e4ef17c5")
 	)
 	(wire
 		(pts
@@ -14642,7 +15013,7 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 151.13) (xy 64.77 154.94)
+			(xy 64.77 149.86) (xy 64.77 153.67)
 		)
 		(stroke
 			(width 0)
@@ -14669,6 +15040,16 @@
 			(type default)
 		)
 		(uuid "c0a21fde-aae3-47ad-9a4b-b791f63c13bd")
+	)
+	(wire
+		(pts
+			(xy 44.45 180.34) (xy 48.26 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c13eb4c5-37b3-4bc2-96c0-da47a1ec4da2")
 	)
 	(wire
 		(pts
@@ -14722,6 +15103,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 180.34) (xy 36.83 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d3bbcc52-28c2-498a-8c15-3dbc01481ef8")
+	)
+	(wire
+		(pts
 			(xy 156.21 46.99) (xy 180.34 46.99)
 		)
 		(stroke
@@ -14772,7 +15163,7 @@
 	)
 	(wire
 		(pts
-			(xy 69.85 156.21) (xy 69.85 152.4)
+			(xy 69.85 154.94) (xy 69.85 151.13)
 		)
 		(stroke
 			(width 0)
@@ -14802,7 +15193,7 @@
 	)
 	(wire
 		(pts
-			(xy 72.39 151.13) (xy 64.77 151.13)
+			(xy 72.39 149.86) (xy 64.77 149.86)
 		)
 		(stroke
 			(width 0)
@@ -14840,6 +15231,36 @@
 		)
 		(uuid "ff10b81b-cf9e-435a-8668-8e0d12fc6e52")
 	)
+	(label "VGAB1"
+		(at 180.34 90.17 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "0187f6a9-583b-4893-8786-21688bac5971")
+	)
+	(label "VGAG1"
+		(at 36.83 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "046a3ddd-e0f0-436e-abc7-7105ec1ed699")
+	)
+	(label "VGAB0"
+		(at 48.26 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "07038097-64a3-4b1d-9e75-bc10e9559e7a")
+	)
 	(label "SDCLK"
 		(at 170.18 67.31 180)
 		(effects
@@ -14849,6 +15270,16 @@
 			(justify right bottom)
 		)
 		(uuid "11a28ac8-7576-47c0-9a7b-662b2c5b4a52")
+	)
+	(label "VGAR1"
+		(at 25.4 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "181224d8-d3ab-4c4b-952e-e071501ed26c")
 	)
 	(label "SDDAT0"
 		(at 55.88 140.97 180)
@@ -14882,6 +15313,36 @@
 		)
 		(uuid "203d0d9a-c065-4c36-a506-9e804d5df17f")
 	)
+	(label "VGAR1"
+		(at 180.34 77.47 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "26444d52-03ee-4187-aee1-2aff2354c2e3")
+	)
+	(label "VGAG1"
+		(at 180.34 85.09 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "26e26fb6-56f5-489d-af4a-256254afbeae")
+	)
+	(label "VGAG2"
+		(at 33.02 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "2c7d8cab-367b-4559-8029-c060d646c08a")
+	)
 	(label "SDCLK"
 		(at 55.88 135.89 180)
 		(effects
@@ -14914,7 +15375,7 @@
 		)
 		(uuid "371b5a52-16de-4ed1-8de0-99ffff738e00")
 	)
-	(label "HSYNC"
+	(label "VGAHSYNC"
 		(at 180.34 72.39 180)
 		(effects
 			(font
@@ -14924,7 +15385,17 @@
 		)
 		(uuid "377da69a-89c3-448c-a783-a5a3b3048b1d")
 	)
-	(label "VSYNC"
+	(label "VGAR0"
+		(at 180.34 80.01 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "3a181dab-b71f-46e7-b3da-01f1c09c7a72")
+	)
+	(label "VGAVSYNC"
 		(at 180.34 74.93 180)
 		(effects
 			(font
@@ -14954,8 +15425,8 @@
 		)
 		(uuid "6a0dcf05-373f-4b24-adcd-04419116315e")
 	)
-	(label "VSYNC"
-		(at 57.15 171.45 270)
+	(label "VGAVSYNC"
+		(at 57.15 170.18 270)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -14974,6 +15445,36 @@
 		)
 		(uuid "74135351-4fe1-4076-9595-72ebab3e5a22")
 	)
+	(label "VGAG0"
+		(at 40.64 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "78fce4da-78b8-40b6-8135-68fdb9240e8a")
+	)
+	(label "VGAG2"
+		(at 180.34 82.55 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8840ea65-5213-4e90-8034-26a4181ac3a3")
+	)
+	(label "VGAR0"
+		(at 29.21 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8af3adba-f53e-4dcd-9dd0-6206e4a05fd8")
+	)
 	(label "SDSW"
 		(at 78.74 134.62 0)
 		(effects
@@ -14983,6 +15484,16 @@
 			(justify left bottom)
 		)
 		(uuid "9320723d-e9e2-4a67-bb59-4dc3dffdab94")
+	)
+	(label "VGAG0"
+		(at 180.34 87.63 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "a67184f3-363f-4899-8e37-cba8ab886ff2")
 	)
 	(label "SDDAT3"
 		(at 133.35 132.08 0)
@@ -15026,8 +15537,8 @@
 		)
 		(uuid "bee7a547-2422-4a48-8afc-4422e4bf0e2f")
 	)
-	(label "HSYNC"
-		(at 49.53 171.45 270)
+	(label "VGAHSYNC"
+		(at 49.53 170.18 270)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15035,6 +15546,16 @@
 			(justify right bottom)
 		)
 		(uuid "c5a8124f-d18f-45d2-acab-fc79f877adaf")
+	)
+	(label "VGAB0"
+		(at 180.34 92.71 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ce0910f5-1720-43a1-8460-b5159dce5deb")
 	)
 	(label "SDSW"
 		(at 170.18 69.85 180)
@@ -15055,6 +15576,16 @@
 			(justify right bottom)
 		)
 		(uuid "d2989a54-dc4a-4c6a-9899-808bb05f2a70")
+	)
+	(label "VGAB1"
+		(at 44.45 190.5 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d2e82a1f-6df7-4cb7-b808-3152c2cd9567")
 	)
 	(label "SDDAT1"
 		(at 55.88 143.51 180)
@@ -18458,6 +18989,123 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:RC0402FR-071K02L")
+		(at 29.21 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "21852754-a5a3-4e30-9208-3720c21ac491")
+		(property "Reference" "R18"
+			(at 31.75 184.1499 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "RC0402FR-071K02L"
+			(at 31.75 186.6899 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 21.59 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_RC0402FR-071K02L_C163485.html"
+			(at 19.05 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 29.21 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 16.51 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402FR-071K02L"
+			(at 13.97 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C163485"
+			(at 11.43 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4462e86c-7641-47b9-806a-c3cdc7b93168")
+		)
+		(pin "2"
+			(uuid "b1161a0f-4679-417c-9698-719a614c9d54")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R18")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "RC0402FR-0710KL_1")
 		(lib_id "easyeda2kicad:RC0402FR-0710KL")
 		(at 90.17 135.89 0)
@@ -18568,6 +19216,123 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
 					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:RC0402FR-071K02L")
+		(at 36.83 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2d6d3b7b-143b-4c7e-ad33-879eca20f925")
+		(property "Reference" "R20"
+			(at 39.37 184.1499 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "RC0402FR-071K02L"
+			(at 39.37 186.6899 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 29.21 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_RC0402FR-071K02L_C163485.html"
+			(at 26.67 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 36.83 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 24.13 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402FR-071K02L"
+			(at 21.59 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C163485"
+			(at 19.05 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6f42519a-688a-47d2-9d13-572a4af9e828")
+		)
+		(pin "2"
+			(uuid "1b2dd7e5-7a46-48ae-abf8-0e288e41aaff")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R20")
 					(unit 1)
 				)
 			)
@@ -18876,6 +19641,121 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
 					(reference "R11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:RC0402JR-07510RL")
+		(at 44.45 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5b4b0d93-b0c6-40ad-b38a-2705b95961f6")
+		(property "Reference" "R21"
+			(at 50.8 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RC0402JR-07510RL"
+			(at 48.26 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 36.83 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_510R-511-5_C137860.html"
+			(at 34.29 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 44.45 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 31.75 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402JR-07510RL"
+			(at 29.21 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C137860"
+			(at 26.67 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "56ee7b2f-e9b9-49e1-ae9b-24d0bc604eb9")
+		)
+		(pin "1"
+			(uuid "b9c09d7e-eb54-4d56-9850-a5c97fbf73a3")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R21")
 					(unit 1)
 				)
 			)
@@ -19366,7 +20246,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 59.69 176.53 0)
+		(at 59.69 175.26 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19377,17 +20257,6 @@
 		(fields_autoplaced yes)
 		(uuid "73eded50-8072-4854-98e9-7dda188aae38")
 		(property "Reference" "#PWR047"
-			(at 59.69 182.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 59.69 181.61 0)
 			(hide yes)
 			(show_name no)
@@ -19398,8 +20267,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 59.69 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 59.69 176.53 0)
+			(at 59.69 175.26 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19410,7 +20290,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 59.69 176.53 0)
+			(at 59.69 175.26 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19421,7 +20301,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 59.69 176.53 0)
+			(at 59.69 175.26 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19766,7 +20646,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 46.99 173.99 0)
+		(at 46.99 172.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19777,17 +20657,6 @@
 		(fields_autoplaced yes)
 		(uuid "7bb9e867-b78a-4a38-823a-4ff48e09e71e")
 		(property "Reference" "#PWR050"
-			(at 46.99 180.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 46.99 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -19798,8 +20667,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 46.99 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 46.99 173.99 0)
+			(at 46.99 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19810,7 +20690,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 46.99 173.99 0)
+			(at 46.99 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19821,7 +20701,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 46.99 173.99 0)
+			(at 46.99 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20247,7 +21127,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 67.31 152.4 0)
+		(at 67.31 151.13 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -20258,17 +21138,6 @@
 		(fields_autoplaced yes)
 		(uuid "90704923-062e-4f16-bab6-5a982bbfd140")
 		(property "Reference" "#PWR053"
-			(at 67.31 158.75 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 67.31 157.48 0)
 			(hide yes)
 			(show_name no)
@@ -20279,8 +21148,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 67.31 156.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 67.31 152.4 0)
+			(at 67.31 151.13 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20291,7 +21171,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 67.31 152.4 0)
+			(at 67.31 151.13 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20302,7 +21182,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 67.31 152.4 0)
+			(at 67.31 151.13 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20319,6 +21199,121 @@
 			(project "zenith-pcba"
 				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
 					(reference "#PWR053")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:RC0402DR-072K05L")
+		(at 40.64 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "91ba9f46-c62e-4fcd-b40e-60dc3ab539c5")
+		(property "Reference" "R23"
+			(at 46.99 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RC0402DR-072K05L"
+			(at 44.45 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 33.02 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C471776.pdf"
+			(at 30.48 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 40.64 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 27.94 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402DR-072K05L"
+			(at 25.4 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C471776"
+			(at 22.86 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "35d9cbed-3c17-4526-a227-850848cfceba")
+		)
+		(pin "1"
+			(uuid "acc9f748-2605-426e-acdf-48d0a27cdbac")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R23")
 					(unit 1)
 				)
 			)
@@ -21116,7 +22111,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 64.77 154.94 0)
+		(at 64.77 153.67 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -21127,17 +22122,6 @@
 		(fields_autoplaced yes)
 		(uuid "ae7f8626-a13f-4d29-a736-bbc74633c53b")
 		(property "Reference" "#PWR052"
-			(at 64.77 161.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 64.77 160.02 0)
 			(hide yes)
 			(show_name no)
@@ -21148,8 +22132,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 64.77 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 64.77 154.94 0)
+			(at 64.77 153.67 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21160,7 +22155,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 64.77 154.94 0)
+			(at 64.77 153.67 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21171,7 +22166,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 64.77 154.94 0)
+			(at 64.77 153.67 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21195,7 +22190,7 @@
 	)
 	(symbol
 		(lib_id "easyeda2kicad:DS1038-15FBNSIA74-0CC")
-		(at 49.53 166.37 90)
+		(at 49.53 165.1 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -21206,7 +22201,7 @@
 		(fields_autoplaced yes)
 		(uuid "b2e5f210-507b-4d64-88ac-8ca7be20c4e7")
 		(property "Reference" "DSub1"
-			(at 22.86 163.8299 90)
+			(at 22.86 162.5599 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21218,7 +22213,7 @@
 			)
 		)
 		(property "Value" "DS1038-15FBNSIA74-0CC"
-			(at 22.86 166.3699 90)
+			(at 22.86 165.0999 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21230,7 +22225,7 @@
 			)
 		)
 		(property "Footprint" "easyeda2kicad:DSUB-TH_DS1038-15FBNSIA74-0CC"
-			(at 80.01 166.37 0)
+			(at 80.01 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21241,7 +22236,7 @@
 			)
 		)
 		(property "Datasheet" "https://lcsc.com/product-detail/D-Sub-Connectors_D-SUB-15pin-three-rows-Female90degree-black-pitch2-29mm-Tin-plating-With-hex-screws4-8mm_C75754.html"
-			(at 82.55 166.37 0)
+			(at 82.55 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21252,7 +22247,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 49.53 166.37 0)
+			(at 49.53 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21263,7 +22258,7 @@
 			)
 		)
 		(property "Manufacturer" "CONNFLY"
-			(at 85.09 166.37 0)
+			(at 85.09 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21274,7 +22269,7 @@
 			)
 		)
 		(property "MPN" "DS1038-15FBNSiA74-0CC"
-			(at 87.63 166.37 0)
+			(at 87.63 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21285,7 +22280,7 @@
 			)
 		)
 		(property "LCSC Part" "C75754"
-			(at 90.17 166.37 0)
+			(at 90.17 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21843,6 +22838,123 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:RC0402FR-071K02L")
+		(at 48.26 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c02822bb-c549-4b33-be67-c7c475a7c74c")
+		(property "Reference" "R22"
+			(at 50.8 184.1499 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "RC0402FR-071K02L"
+			(at 50.8 186.6899 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 40.64 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_RC0402FR-071K02L_C163485.html"
+			(at 38.1 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 48.26 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 35.56 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402FR-071K02L"
+			(at 33.02 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C163485"
+			(at 30.48 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8db1550a-2035-488f-b4ad-04ec555c0e34")
+		)
+		(pin "2"
+			(uuid "e36160d5-1663-4013-8b4f-dadf1c6fe57b")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R22")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 17.78 88.9 0)
 		(unit 1)
@@ -21999,7 +23111,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 62.23 173.99 0)
+		(at 62.23 172.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -22010,17 +23122,6 @@
 		(fields_autoplaced yes)
 		(uuid "c7c753b8-446b-447d-9dac-33243be607fb")
 		(property "Reference" "#PWR051"
-			(at 62.23 180.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 62.23 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -22031,8 +23132,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 62.23 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 62.23 173.99 0)
+			(at 62.23 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22043,7 +23155,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 62.23 173.99 0)
+			(at 62.23 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22054,7 +23166,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 62.23 173.99 0)
+			(at 62.23 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22272,7 +23384,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 39.37 173.99 0)
+		(at 39.37 172.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -22283,17 +23395,6 @@
 		(fields_autoplaced yes)
 		(uuid "cb17d4b4-347b-4ddd-b9fe-7128f20eeaef")
 		(property "Reference" "#PWR049"
-			(at 39.37 180.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 39.37 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -22304,8 +23405,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 39.37 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 39.37 173.99 0)
+			(at 39.37 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22316,7 +23428,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 39.37 173.99 0)
+			(at 39.37 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22327,7 +23439,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 39.37 173.99 0)
+			(at 39.37 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22774,6 +23886,121 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:RC0402JR-07510RL")
+		(at 33.02 185.42 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "ee52462b-f84a-4288-bb4c-260ed618da87")
+		(property "Reference" "R19"
+			(at 39.37 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RC0402JR-07510RL"
+			(at 36.83 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 25.4 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_510R-511-5_C137860.html"
+			(at 22.86 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 33.02 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO(国巨)"
+			(at 20.32 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "RC0402JR-07510RL"
+			(at 17.78 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C137860"
+			(at 15.24 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "c2e30a62-df4c-4445-8910-a527bdcac482")
+		)
+		(pin "1"
+			(uuid "fbba9750-41cd-49f5-8772-5c2e82921e7b")
+		)
+		(instances
+			(project "zenith-pcba"
+				(path "/998c5703-2ef0-4484-8ced-1d53dcc65d39/c66f70fc-3f45-45c7-aaad-cd98a793339c"
+					(reference "R19")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "easyeda2kicad:RC0402FR-0710KL")
 		(at 38.1 144.78 0)
 		(unit 1)
@@ -22967,7 +24194,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 31.75 173.99 0)
+		(at 31.75 172.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -22978,17 +24205,6 @@
 		(fields_autoplaced yes)
 		(uuid "f8d1a3ba-c6b1-4557-ac81-274c2c4702bf")
 		(property "Reference" "#PWR048"
-			(at 31.75 180.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
 			(at 31.75 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -22999,8 +24215,19 @@
 				)
 			)
 		)
+		(property "Value" "GND"
+			(at 31.75 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Footprint" ""
-			(at 31.75 173.99 0)
+			(at 31.75 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23011,7 +24238,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 31.75 173.99 0)
+			(at 31.75 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23022,7 +24249,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 31.75 173.99 0)
+			(at 31.75 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23046,7 +24273,7 @@
 	)
 	(symbol
 		(lib_id "easyeda2kicad:RC0402JR-07510RL")
-		(at 29.21 185.42 270)
+		(at 25.4 185.42 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -23057,7 +24284,7 @@
 		(fields_autoplaced yes)
 		(uuid "feec8193-8244-4231-9d64-d842bbe3268b")
 		(property "Reference" "R17"
-			(at 35.56 185.42 0)
+			(at 31.75 185.42 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23068,39 +24295,6 @@
 			)
 		)
 		(property "Value" "RC0402JR-07510RL"
-			(at 33.02 185.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:R0402"
-			(at 21.59 185.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_510R-511-5_C137860.html"
-			(at 19.05 185.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
 			(at 29.21 185.42 0)
 			(hide yes)
 			(show_name no)
@@ -23111,8 +24305,41 @@
 				)
 			)
 		)
+		(property "Footprint" "easyeda2kicad:R0402"
+			(at 17.78 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount_510R-511-5_C137860.html"
+			(at 15.24 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 25.4 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Manufacturer" "YAGEO(国巨)"
-			(at 16.51 185.42 0)
+			(at 12.7 185.42 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23123,7 +24350,7 @@
 			)
 		)
 		(property "MPN" "RC0402JR-07510RL"
-			(at 13.97 185.42 0)
+			(at 10.16 185.42 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23134,7 +24361,7 @@
 			)
 		)
 		(property "LCSC Part" "C137860"
-			(at 11.43 185.42 0)
+			(at 7.62 185.42 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
