@@ -19571,7 +19571,7 @@
 	)
 	(symbol
 		(lib_id "FPGA_Xilinx_Kintex7:XC7K70T-FBG676")
-		(at 303.53 -40.64 0)
+		(at 331.47 27.94 0)
 		(unit 3)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19582,7 +19582,7 @@
 		(fields_autoplaced yes)
 		(uuid "e1a73085-b8c3-4239-a225-46ae4e0e7cb8")
 		(property "Reference" "U1"
-			(at 349.25 -38.7351 0)
+			(at 377.19 29.8449 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19593,7 +19593,7 @@
 			)
 		)
 		(property "Value" "XC7K70T-FBG676"
-			(at 349.25 -36.1951 0)
+			(at 377.19 32.3849 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19604,7 +19604,7 @@
 			)
 		)
 		(property "Footprint" "easyeda2kicad:FBGA-676_L27.0-W27.0-R26-C26-P1.00-BL"
-			(at 303.53 -40.64 0)
+			(at 331.47 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19615,7 +19615,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 303.53 -40.64 0)
+			(at 331.47 27.94 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19625,7 +19625,7 @@
 			)
 		)
 		(property "Description" "Kintex 7 T 70 XC7K70T-FBG676"
-			(at 303.53 -40.64 0)
+			(at 331.47 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
