@@ -61,7 +61,7 @@
           "hatch_smoothing_value": 0.1,
           "hatch_thickness": 1.0,
           "min_clearance": 0.5,
-          "min_island_area": 10.0,
+          "min_island_area": 9.9999993548,
           "min_thickness": 0.25,
           "pad_connection": 1,
           "remove_islands": 0,
@@ -74,6 +74,11 @@
           "gap": 0.0,
           "via_gap": 0.0,
           "width": 0.0
+        },
+        {
+          "gap": 0.1,
+          "via_gap": 0.1,
+          "width": 0.1
         }
       ],
       "drc_exclusions": [],
@@ -512,7 +517,7 @@
     "classes": [
       {
         "bus_width": 12,
-        "clearance": 0.5,
+        "clearance": 0.35,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
         "diff_pair_width": 0.2,
@@ -665,7 +670,7 @@
         "uuid": "998c5703-2ef0-4484-8ced-1d53dcc65d39"
       }
     ],
-    "used_designators": "L1-2,U1-6,PS1,#PWR1-31,#PWR40-54,J1,R1-23,USB1,DSub1,SW1-2,Card1,C1-10,D1,D4,X1",
+    "used_designators": "L1-2,U1-6,U9-10,PS1,#PWR1-31,#PWR40-56,J1,R1-25,USB1,DSub1,SW1-2,Card1,C1-10,D1,D4-5,X1",
     "variants": []
   },
   "sheets": [
