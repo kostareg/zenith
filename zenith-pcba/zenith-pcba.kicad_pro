@@ -670,7 +670,7 @@
         "uuid": "998c5703-2ef0-4484-8ced-1d53dcc65d39"
       }
     ],
-    "used_designators": "L1-2,U1-6,U9-10,PS1,#PWR1-31,#PWR40-56,J1,R1-25,USB1,DSub1,SW1-2,Card1,C1-10,D1,D4-5,X1",
+    "used_designators": "L1-2,U1-6,U9-11,PS1,#PWR1-31,#PWR40-59,J1,R1-25,USB1,DSub1,SW1-2,Card1,C1-10,D1,D4-5,X1",
     "variants": []
   },
   "sheets": [
@@ -685,6 +685,10 @@
     [
       "c66f70fc-3f45-45c7-aaad-cd98a793339c",
       "IO"
+    ],
+    [
+      "1bb5541d-d0d3-49cc-a334-11d2e5f21b14",
+      "Disconnected IO"
     ],
     [
       "d152660c-456e-437b-9b9b-57a28d7a418e",
