@@ -11,8 +11,10 @@ int main() {
         char line[100] = {};
         printf("$ ");
         scanf(line);
-        if (strcmp(line, "run-command")) {
-            printf("yay\n");
+        if (strcmp(line, "test")) {
+            printf("ran test command\n");
+        } else {
+            printf("command not found\n");
         }
     }
 

@@ -1097,6 +1097,11 @@ export function App() {
 
     useEffect(() => {
         if (!peripheralsFullscreen) return;
+        fullscreenFramebufferCanvasRef.current?.focus();
+    }, [peripheralsFullscreen]);
+
+    useEffect(() => {
+        if (!peripheralsFullscreen) return;
 
         const closeOnEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
@@ -1255,15 +1260,26 @@ export function App() {
         return compiledParseResult;
     }
 
-    function handleKeyboardInput(event: ReactKeyboardEvent<HTMLInputElement>) {
-        const keyCode = KEYBOARD_HID_USAGE_IDS[event.code];
-        if (keyCode === undefined) return;
+    function sendEmulatorKey(code: string, repeat: boolean) {
+        const keyCode = KEYBOARD_HID_USAGE_IDS[code];
+        if (keyCode === undefined) return false;
 
-        const accepted = emulator?.pushKeyEvent(keyCode, true, event.repeat) ?? false;
+        const accepted = emulator?.pushKeyEvent(keyCode, true, repeat) ?? false;
         if (accepted) {
             setKeyboardAcceptedCount((count) => count + 1);
         } else {
             setKeyboardDroppedCount((count) => count + 1);
+        }
+        return true;
+    }
+
+    function handleKeyboardInput(event: ReactKeyboardEvent<HTMLInputElement>) {
+        sendEmulatorKey(event.code, event.repeat);
+    }
+
+    function handleFramebufferKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
+        if (sendEmulatorKey(event.code, event.repeat)) {
+            event.preventDefault();
         }
     }
 
@@ -1530,10 +1546,14 @@ export function App() {
                             </div>
                             <div className="p-3">
                                 <canvas
-                                    aria-label="Framebuffer preview"
-                                    className="aspect-video w-full border bg-black [image-rendering:pixelated]"
+                                    aria-label="Framebuffer preview. Click and type to send keystrokes to the emulator."
+                                    className="aspect-video w-full cursor-text border bg-black [image-rendering:pixelated] outline-none focus:border-primary focus:ring-2 focus:ring-primary"
                                     height={FRAMEBUFFER_PREVIEW_HEIGHT}
+                                    onClick={(event) => event.currentTarget.focus()}
+                                    onKeyDown={handleFramebufferKeyDown}
                                     ref={framebufferCanvasRef}
+                                    tabIndex={0}
+                                    title="Click and type to send keystrokes to the emulator keyboard"
                                     width={FRAMEBUFFER_PREVIEW_WIDTH}
                                 />
                                 <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
@@ -1593,10 +1613,14 @@ export function App() {
                             </div>
                             <div className="grid min-h-0 place-items-center overflow-auto bg-black p-3">
                                 <canvas
-                                    aria-label="Fullscreen framebuffer"
-                                    className="max-h-full max-w-full border border-border bg-black [image-rendering:pixelated]"
+                                    aria-label="Fullscreen framebuffer. Type to send keystrokes to the emulator."
+                                    className="max-h-full max-w-full cursor-text border border-border bg-black [image-rendering:pixelated] outline-none focus:border-primary focus:ring-2 focus:ring-primary"
                                     height={FRAMEBUFFER_HEIGHT}
+                                    onClick={(event) => event.currentTarget.focus()}
+                                    onKeyDown={handleFramebufferKeyDown}
                                     ref={fullscreenFramebufferCanvasRef}
+                                    tabIndex={0}
+                                    title="Type to send keystrokes to the emulator keyboard"
                                     width={FRAMEBUFFER_WIDTH}
                                 />
                             </div>
