@@ -1,13 +1,14 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
-import { Hammer, Maximize2, Pause, RotateCcw, SkipForward, StepForward, X } from "lucide-react";
+import { Hammer, Maximize2, Minimize2, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
 import { EditorView, Decoration, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { useZenithAssembler } from "@/components/wasm/zenith-assembler-provider";
 import { useZenithCompiler } from "@/components/wasm/zenith-compiler-provider";
 import { useZenithEmulator } from "@/components/wasm/zenith-emulator-provider";
@@ -688,7 +689,59 @@ function createInstructionChartPath(points: Array<ChartPoint>) {
     return points.map(({ x, y }, index) => `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
 }
 
-function InstructionFrameChart({ samples, isRunning }: { samples: Array<number>; isRunning: boolean }) {
+function KeyboardPanel({
+    emulator,
+    value,
+    onChange,
+    onKeyDown,
+    acceptedCount,
+    droppedCount,
+    className,
+}: {
+    emulator: ReturnType<typeof useZenithEmulator>;
+    value: string;
+    onChange: (value: string) => void;
+    onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
+    acceptedCount: number;
+    droppedCount: number;
+    className?: string;
+}) {
+    return (
+        <section className={cn("rounded-lg border bg-background", className)}>
+            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Keyboard</h3>
+                <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
+                    <span>{acceptedCount} sent</span>
+                    <span>{droppedCount} dropped</span>
+                </div>
+            </div>
+            <div className="p-3">
+                <Input
+                    aria-label="Keyboard input"
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    className="font-mono"
+                    disabled={!emulator}
+                    onChange={(event) => onChange(event.target.value)}
+                    onKeyDown={onKeyDown}
+                    spellCheck={false}
+                    value={value}
+                />
+            </div>
+        </section>
+    );
+}
+
+function InstructionFrameChart({
+    samples,
+    isRunning,
+    className,
+}: {
+    samples: Array<number>;
+    isRunning: boolean;
+    className?: string;
+}) {
     const chart = useMemo(() => {
         const points = createInstructionChartPoints(samples);
 
@@ -704,7 +757,7 @@ function InstructionFrameChart({ samples, isRunning }: { samples: Array<number>;
         samples.length > 0 ? Math.round(samples.reduce((total, sample) => total + sample, 0) / samples.length) : 0;
 
     return (
-        <section className="mt-4 rounded-md border bg-background">
+        <section className={cn("rounded-md border bg-background", className)}>
             <div className="flex items-center justify-between border-b px-3 py-2">
                 <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                     Emulator instructions/frame
@@ -801,7 +854,7 @@ export function App() {
     const framebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const fullscreenFramebufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [framebufferRevision, setFramebufferRevision] = useState(0);
-    const [fullscreenFramebufferIsOpen, setFullscreenFramebufferIsOpen] = useState(false);
+    const [peripheralsFullscreen, setPeripheralsFullscreen] = useState(false);
     const [instructionsPerFrame, setInstructionsPerFrame] = useState<Array<number>>([]);
     const [keyboardInput, setKeyboardInput] = useState("");
     const [keyboardAcceptedCount, setKeyboardAcceptedCount] = useState(0);
@@ -936,26 +989,26 @@ export function App() {
     }, [emulator, framebufferRevision]);
 
     useEffect(() => {
-        if (!fullscreenFramebufferIsOpen) return;
+        if (!peripheralsFullscreen) return;
 
         const canvas = fullscreenFramebufferCanvasRef.current;
         if (!canvas) return;
 
         paintFramebufferFullSize(canvas, emulator?.getFramebuffer() ?? null);
-    }, [emulator, framebufferRevision, fullscreenFramebufferIsOpen]);
+    }, [emulator, framebufferRevision, peripheralsFullscreen]);
 
     useEffect(() => {
-        if (!fullscreenFramebufferIsOpen) return;
+        if (!peripheralsFullscreen) return;
 
         const closeOnEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
-                setFullscreenFramebufferIsOpen(false);
+                setPeripheralsFullscreen(false);
             }
         };
 
         window.addEventListener("keydown", closeOnEscape);
         return () => window.removeEventListener("keydown", closeOnEscape);
-    }, [fullscreenFramebufferIsOpen]);
+    }, [peripheralsFullscreen]);
 
     useEffect(() => {
         if (!isRunning || !emulator || parseResult.errors.length > 0) {
@@ -1408,9 +1461,21 @@ export function App() {
                 </section>
 
                 <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-l bg-muted/20">
-                    <header className="border-b px-4 py-3">
-                        <h2 className="text-sm font-semibold">Peripherals</h2>
-                        <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
+                    <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+                        <div className="min-w-0">
+                            <h2 className="text-sm font-semibold">Peripherals</h2>
+                            <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
+                        </div>
+                        <Button
+                            aria-label="Open fullscreen peripherals"
+                            disabled={!emulator}
+                            onClick={() => setPeripheralsFullscreen(true)}
+                            size="icon-sm"
+                            title="Open fullscreen peripherals"
+                            variant="ghost"
+                        >
+                            <Maximize2 />
+                        </Button>
                     </header>
                     <div className="min-h-0 overflow-auto p-4">
                         <section className="rounded-lg border bg-background">
@@ -1418,21 +1483,9 @@ export function App() {
                                 <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                     Framebuffer
                                 </h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-mono text-[11px] text-muted-foreground">
-                                        {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT}
-                                    </span>
-                                    <Button
-                                        aria-label="Open fullscreen framebuffer"
-                                        disabled={!emulator}
-                                        onClick={() => setFullscreenFramebufferIsOpen(true)}
-                                        size="icon-xs"
-                                        title="Open fullscreen framebuffer"
-                                        variant="ghost"
-                                    >
-                                        <Maximize2 />
-                                    </Button>
-                                </div>
+                                <span className="font-mono text-[11px] text-muted-foreground">
+                                    {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT}
+                                </span>
                             </div>
                             <div className="p-3">
                                 <canvas
@@ -1450,76 +1503,78 @@ export function App() {
                                 </div>
                             </div>
                         </section>
-                        <section className="mt-4 rounded-lg border bg-background">
-                            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    Keyboard
-                                </h3>
-                                <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
-                                    <span>{keyboardAcceptedCount} sent</span>
-                                    <span>{keyboardDroppedCount} dropped</span>
-                                </div>
-                            </div>
-                            <div className="p-3">
-                                <Input
-                                    aria-label="Keyboard input"
-                                    autoCapitalize="off"
-                                    autoComplete="off"
-                                    autoCorrect="off"
-                                    className="font-mono"
-                                    disabled={!emulator}
-                                    onChange={(event) => setKeyboardInput(event.target.value)}
-                                    onKeyDown={handleKeyboardInput}
-                                    spellCheck={false}
-                                    value={keyboardInput}
-                                />
-                            </div>
-                        </section>
-                        <InstructionFrameChart isRunning={isRunning} samples={instructionsPerFrame} />
+                        <KeyboardPanel
+                            acceptedCount={keyboardAcceptedCount}
+                            className="mt-4"
+                            droppedCount={keyboardDroppedCount}
+                            emulator={emulator}
+                            onChange={setKeyboardInput}
+                            onKeyDown={handleKeyboardInput}
+                            value={keyboardInput}
+                        />
+                        <InstructionFrameChart className="mt-4" isRunning={isRunning} samples={instructionsPerFrame} />
                     </div>
                 </aside>
             </main>
-            {fullscreenFramebufferIsOpen ? (
+            {peripheralsFullscreen ? (
                 <div
-                    aria-labelledby="fullscreen-framebuffer-title"
+                    aria-labelledby="fullscreen-peripherals-title"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] bg-background/95 text-foreground backdrop-blur-sm"
-                    onClick={() => setFullscreenFramebufferIsOpen(false)}
+                    className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] bg-background text-foreground"
                     role="dialog"
                 >
-                    <header
-                        className="flex items-center justify-between gap-3 border-b bg-background px-4 py-3"
-                        onClick={(event) => event.stopPropagation()}
-                    >
+                    <header className="flex items-center justify-between gap-3 border-b bg-muted/20 px-4 py-3">
                         <div className="min-w-0">
-                            <h2 className="text-sm font-semibold" id="fullscreen-framebuffer-title">
-                                Framebuffer
+                            <h2 className="text-sm font-semibold" id="fullscreen-peripherals-title">
+                                Peripherals
                             </h2>
-                            <p className="font-mono text-xs text-muted-foreground">
-                                {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT} RGB888
-                            </p>
+                            <p className="text-xs text-muted-foreground">Framebuffer and future MMIO devices</p>
                         </div>
                         <Button
-                            aria-label="Close fullscreen framebuffer"
-                            onClick={() => setFullscreenFramebufferIsOpen(false)}
+                            aria-label="Exit fullscreen peripherals"
+                            onClick={() => setPeripheralsFullscreen(false)}
                             size="icon"
-                            title="Close fullscreen framebuffer"
+                            title="Exit fullscreen peripherals"
                             variant="outline"
                         >
-                            <X />
+                            <Minimize2 />
                         </Button>
                     </header>
-                    <div
-                        className="grid min-h-0 place-items-center overflow-auto bg-black p-4"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <canvas
-                            aria-label="Fullscreen framebuffer"
-                            className="max-h-full max-w-full border border-border bg-black [image-rendering:pixelated]"
-                            height={FRAMEBUFFER_HEIGHT}
-                            ref={fullscreenFramebufferCanvasRef}
-                            width={FRAMEBUFFER_WIDTH}
-                        />
+                    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_24rem] gap-4 overflow-hidden p-4">
+                        <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] rounded-lg border bg-background">
+                            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Framebuffer
+                                </h3>
+                                <span className="font-mono text-[11px] text-muted-foreground">
+                                    {FRAMEBUFFER_WIDTH}x{FRAMEBUFFER_HEIGHT} RGB888
+                                </span>
+                            </div>
+                            <div className="grid min-h-0 place-items-center overflow-auto bg-black p-3">
+                                <canvas
+                                    aria-label="Fullscreen framebuffer"
+                                    className="max-h-full max-w-full border border-border bg-black [image-rendering:pixelated]"
+                                    height={FRAMEBUFFER_HEIGHT}
+                                    ref={fullscreenFramebufferCanvasRef}
+                                    width={FRAMEBUFFER_WIDTH}
+                                />
+                            </div>
+                        </section>
+                        <div className="min-h-0 overflow-auto">
+                            <KeyboardPanel
+                                acceptedCount={keyboardAcceptedCount}
+                                droppedCount={keyboardDroppedCount}
+                                emulator={emulator}
+                                onChange={setKeyboardInput}
+                                onKeyDown={handleKeyboardInput}
+                                value={keyboardInput}
+                            />
+                            <InstructionFrameChart
+                                className="mt-4"
+                                isRunning={isRunning}
+                                samples={instructionsPerFrame}
+                            />
+                        </div>
                     </div>
                 </div>
             ) : null}
