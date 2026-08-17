@@ -3,7 +3,7 @@ import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/
 import { tags } from "@lezer/highlight";
 import { Hammer, Maximize2, Minimize2, Pause, RotateCcw, SkipForward, StepForward } from "lucide-react";
 import { EditorView, Decoration, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,14 @@ const INSTRUCTION_CHART_WIDTH = 280;
 const INSTRUCTION_CHART_HEIGHT = 72;
 const INSTRUCTION_CHART_PADDING = 6;
 const EDITOR_MINIMAP_WIDTH = 52;
+
+const EDITOR_BASIC_SETUP = {
+    autocompletion: false,
+    bracketMatching: false,
+    foldGutter: false,
+    highlightSelectionMatches: false,
+} as const;
+const EDITOR_CLASS_NAME = "h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto";
 
 const KEYBOARD_HID_USAGE_IDS: Readonly<Record<string, number>> = {
     KeyA: 0x04,
@@ -83,47 +91,57 @@ const KEYBOARD_HID_USAGE_IDS: Readonly<Record<string, number>> = {
     Slash: 0x38,
 };
 
+const PREVIEW_SOURCE_X = (() => {
+    const table = new Int32Array(FRAMEBUFFER_PREVIEW_WIDTH);
+    for (let x = 0; x < FRAMEBUFFER_PREVIEW_WIDTH; x += 1) {
+        table[x] = Math.floor((x * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
+    }
+    return table;
+})();
+const PREVIEW_SOURCE_ROW = (() => {
+    const table = new Int32Array(FRAMEBUFFER_PREVIEW_HEIGHT);
+    for (let y = 0; y < FRAMEBUFFER_PREVIEW_HEIGHT; y += 1) {
+        table[y] = Math.floor((y * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT) * FRAMEBUFFER_WIDTH;
+    }
+    return table;
+})();
+
+const OPAQUE_BLACK = 0xff000000;
+
+let previewImageData: ImageData | null = null;
+let previewPixels: Uint32Array | null = null;
+let fullscreenImageData: ImageData | null = null;
+let fullscreenPixels: Uint32Array | null = null;
+
 function paintFramebufferPreview(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
     const context = canvas.getContext("2d");
     if (!context) return;
 
     context.imageSmoothingEnabled = false;
-    const imageData = context.createImageData(FRAMEBUFFER_PREVIEW_WIDTH, FRAMEBUFFER_PREVIEW_HEIGHT);
+    if (!previewImageData || !previewPixels) {
+        previewImageData = context.createImageData(FRAMEBUFFER_PREVIEW_WIDTH, FRAMEBUFFER_PREVIEW_HEIGHT);
+        previewPixels = new Uint32Array(previewImageData.data.buffer);
+    }
+    const pixels = previewPixels;
 
     if (framebuffer) {
+        let destination = 0;
         for (let y = 0; y < FRAMEBUFFER_PREVIEW_HEIGHT; y += 1) {
-            const sourceYStart = Math.floor((y * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
-            const sourceYEnd = Math.ceil(((y + 1) * FRAMEBUFFER_HEIGHT) / FRAMEBUFFER_PREVIEW_HEIGHT);
+            const rowOffset = PREVIEW_SOURCE_ROW[y];
             for (let x = 0; x < FRAMEBUFFER_PREVIEW_WIDTH; x += 1) {
-                const destinationOffset = (y * FRAMEBUFFER_PREVIEW_WIDTH + x) * 4;
-                const sourceXStart = Math.floor((x * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
-                const sourceXEnd = Math.ceil(((x + 1) * FRAMEBUFFER_WIDTH) / FRAMEBUFFER_PREVIEW_WIDTH);
-
-                let red = 0;
-                let green = 0;
-                let blue = 0;
-                for (let sourceY = sourceYStart; sourceY < sourceYEnd; sourceY += 1) {
-                    for (let sourceX = sourceXStart; sourceX < sourceXEnd; sourceX += 1) {
-                        const sourceOffset = (sourceY * FRAMEBUFFER_WIDTH + sourceX) * 3;
-                        red = Math.max(red, framebuffer[sourceOffset] ?? 0);
-                        green = Math.max(green, framebuffer[sourceOffset + 1] ?? 0);
-                        blue = Math.max(blue, framebuffer[sourceOffset + 2] ?? 0);
-                    }
-                }
-
-                imageData.data[destinationOffset] = red;
-                imageData.data[destinationOffset + 1] = green;
-                imageData.data[destinationOffset + 2] = blue;
-                imageData.data[destinationOffset + 3] = 255;
+                const sourceOffset = (rowOffset + PREVIEW_SOURCE_X[x]) * 3;
+                const red = framebuffer[sourceOffset] ?? 0;
+                const green = framebuffer[sourceOffset + 1] ?? 0;
+                const blue = framebuffer[sourceOffset + 2] ?? 0;
+                pixels[destination] = OPAQUE_BLACK | (blue << 16) | (green << 8) | red;
+                destination += 1;
             }
         }
     } else {
-        for (let i = 3; i < imageData.data.length; i += 4) {
-            imageData.data[i] = 255;
-        }
+        pixels.fill(OPAQUE_BLACK);
     }
 
-    context.putImageData(imageData, 0, 0);
+    context.putImageData(previewImageData, 0, 0);
 }
 
 function paintFramebufferFullSize(canvas: HTMLCanvasElement, framebuffer: ArrayLike<number> | null) {
@@ -131,23 +149,25 @@ function paintFramebufferFullSize(canvas: HTMLCanvasElement, framebuffer: ArrayL
     if (!context) return;
 
     context.imageSmoothingEnabled = false;
-    const imageData = context.createImageData(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+    if (!fullscreenImageData || !fullscreenPixels) {
+        fullscreenImageData = context.createImageData(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+        fullscreenPixels = new Uint32Array(fullscreenImageData.data.buffer);
+    }
+    const pixels = fullscreenPixels;
 
     if (framebuffer) {
-        for (let sourceOffset = 0, destinationOffset = 0; sourceOffset < framebuffer.length; sourceOffset += 3) {
-            imageData.data[destinationOffset] = framebuffer[sourceOffset] ?? 0;
-            imageData.data[destinationOffset + 1] = framebuffer[sourceOffset + 1] ?? 0;
-            imageData.data[destinationOffset + 2] = framebuffer[sourceOffset + 2] ?? 0;
-            imageData.data[destinationOffset + 3] = 255;
-            destinationOffset += 4;
+        const pixelCount = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT;
+        for (let destination = 0, sourceOffset = 0; destination < pixelCount; destination += 1, sourceOffset += 3) {
+            const red = framebuffer[sourceOffset] ?? 0;
+            const green = framebuffer[sourceOffset + 1] ?? 0;
+            const blue = framebuffer[sourceOffset + 2] ?? 0;
+            pixels[destination] = OPAQUE_BLACK | (blue << 16) | (green << 8) | red;
         }
     } else {
-        for (let i = 3; i < imageData.data.length; i += 4) {
-            imageData.data[i] = 255;
-        }
+        pixels.fill(OPAQUE_BLACK);
     }
 
-    context.putImageData(imageData, 0, 0);
+    context.putImageData(fullscreenImageData, 0, 0);
 }
 
 const REGISTER_NAMES = [
@@ -580,6 +600,11 @@ function resolveNextInstructionIndex(instruction: number, currentIndex: number, 
     return nextPc % 4 === 0 ? nextPc / 4 : -1;
 }
 
+function instructionNeedsRegisters(instruction: number) {
+    const op = instruction & 0x7f;
+    return (op >= 0x14 && op <= 0x19) || op === 0x1b;
+}
+
 function unknownErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
 }
@@ -981,6 +1006,79 @@ export function App() {
 
     const cEditorExtensions = useMemo(() => [...baseEditorExtensions, cLikeLanguage], [baseEditorExtensions]);
 
+    const handleZenithCChange = useCallback((value: string) => {
+        setZenithCSource(value);
+        setCompilerError(null);
+        setAssemblyError(null);
+        setAssemblyIsLoaded(false);
+        setIsRunning(false);
+        setInstructionsPerFrame([]);
+        setLastMessage("Zenith C changed. Compile and load before running those changes.");
+    }, []);
+
+    const handleAssemblyChange = useCallback((value: string) => {
+        setAssemblySource(value);
+        setCompilerError(null);
+        setAssemblyError(null);
+        setAssemblyIsLoaded(false);
+        setIsRunning(false);
+        setInstructionsPerFrame([]);
+        setLastMessage("Assembly changed. Compile and load before running those changes.");
+    }, []);
+
+    const handleMachineCodeChange = useCallback((value: string) => {
+        setIsRunning(false);
+        setMachineCode(value);
+        setCompilerError(null);
+        setAssemblyError(null);
+        setAssemblyIsLoaded(false);
+        setInstructionIndex(0);
+        setInstructionsPerFrame([]);
+        setLastMessage("Machine code changed. Reset or step from the first parsed line.");
+    }, []);
+
+    const zenithCEditor = useMemo(
+        () => (
+            <CodeMirror
+                basicSetup={EDITOR_BASIC_SETUP}
+                className={EDITOR_CLASS_NAME}
+                extensions={cEditorExtensions}
+                height="100%"
+                onChange={handleZenithCChange}
+                value={zenithCSource}
+            />
+        ),
+        [cEditorExtensions, handleZenithCChange, zenithCSource]
+    );
+
+    const assemblyEditor = useMemo(
+        () => (
+            <CodeMirror
+                basicSetup={EDITOR_BASIC_SETUP}
+                className={EDITOR_CLASS_NAME}
+                extensions={assemblyEditorExtensions}
+                height="100%"
+                onChange={handleAssemblyChange}
+                value={assemblySource}
+            />
+        ),
+        [assemblyEditorExtensions, handleAssemblyChange, assemblySource]
+    );
+
+    const machineCodeEditor = useMemo(
+        () => (
+            <CodeMirror
+                basicSetup={EDITOR_BASIC_SETUP}
+                className={EDITOR_CLASS_NAME}
+                extensions={machineCodeEditorExtensions}
+                height="100%"
+                onChange={handleMachineCodeChange}
+                value={machineCode}
+            />
+        ),
+        [machineCodeEditorExtensions, handleMachineCodeChange, machineCode]
+    );
+
     useEffect(() => {
         const canvas = framebufferCanvasRef.current;
         if (!canvas) return;
@@ -1037,12 +1135,16 @@ export function App() {
                     nextRegisters
                 );
                 emulator.step(instruction.value);
-                nextRegisters = emulator.getRegisters();
                 nextInstructionIndex = resolvedInstructionIndex;
+
+                const upcoming = parseResult.instructions[nextInstructionIndex];
+                if (upcoming && instructionNeedsRegisters(upcoming.value)) {
+                    nextRegisters = emulator.getRegisters();
+                }
                 executed += 1;
             }
 
-            setRegisters(nextRegisters);
+            setRegisters(emulator.getRegisters());
             setInstructionIndex(nextInstructionIndex);
             setFramebufferRevision((revision) => revision + 1);
             setInstructionsPerFrame((history) => appendInstructionFrameSample(history, executed));
@@ -1342,74 +1444,13 @@ export function App() {
                             </div>
                         </div>
                         <TabsContent className="m-0 min-h-0 overflow-hidden" value="zenith-c">
-                            <CodeMirror
-                                basicSetup={{
-                                    autocompletion: false,
-                                    bracketMatching: false,
-                                    foldGutter: false,
-                                    highlightSelectionMatches: false,
-                                }}
-                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
-                                extensions={cEditorExtensions}
-                                height="100%"
-                                onChange={(value) => {
-                                    setZenithCSource(value);
-                                    setCompilerError(null);
-                                    setAssemblyError(null);
-                                    setAssemblyIsLoaded(false);
-                                    setIsRunning(false);
-                                    setInstructionsPerFrame([]);
-                                    setLastMessage("Zenith C changed. Compile and load before running those changes.");
-                                }}
-                                value={zenithCSource}
-                            />
+                            {zenithCEditor}
                         </TabsContent>
                         <TabsContent className="m-0 min-h-0 overflow-hidden" value="assembly">
-                            <CodeMirror
-                                basicSetup={{
-                                    autocompletion: false,
-                                    bracketMatching: false,
-                                    foldGutter: false,
-                                    highlightSelectionMatches: false,
-                                }}
-                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
-                                extensions={assemblyEditorExtensions}
-                                height="100%"
-                                onChange={(value) => {
-                                    setAssemblySource(value);
-                                    setCompilerError(null);
-                                    setAssemblyError(null);
-                                    setAssemblyIsLoaded(false);
-                                    setIsRunning(false);
-                                    setInstructionsPerFrame([]);
-                                    setLastMessage("Assembly changed. Compile and load before running those changes.");
-                                }}
-                                value={assemblySource}
-                            />
+                            {assemblyEditor}
                         </TabsContent>
                         <TabsContent className="m-0 min-h-0 overflow-hidden" value="machine-code">
-                            <CodeMirror
-                                basicSetup={{
-                                    autocompletion: false,
-                                    bracketMatching: false,
-                                    foldGutter: false,
-                                    highlightSelectionMatches: false,
-                                }}
-                                className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
-                                extensions={machineCodeEditorExtensions}
-                                height="100%"
-                                onChange={(value) => {
-                                    setIsRunning(false);
-                                    setMachineCode(value);
-                                    setCompilerError(null);
-                                    setAssemblyError(null);
-                                    setAssemblyIsLoaded(false);
-                                    setInstructionIndex(0);
-                                    setInstructionsPerFrame([]);
-                                    setLastMessage("Machine code changed. Reset or step from the first parsed line.");
-                                }}
-                                value={machineCode}
-                            />
+                            {machineCodeEditor}
                         </TabsContent>
                     </Tabs>
 

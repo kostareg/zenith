@@ -272,16 +272,6 @@ void enable_framebuffer() {
     *control = 2L << 32;
 }
 
-void __zenith_libc_set_framebuffer_byte(long byte_offset) {
-    long byte_in_word = byte_offset % 8;
-    long aligned_offset = byte_offset - byte_in_word;
-    long shift = byte_in_word * 8;
-    long mask = 255L << shift;
-
-    long *word = __ZENITH_LIBC_FB_PIXEL_BASE + aligned_offset;
-    *word = *word | mask;
-}
-
 void __zenith_libc_put_white_pixel(int x, int y) {
     if (x < 0) return;
     if ((x - __ZENITH_LIBC_FB_WIDTH) >= 0) return;
@@ -290,9 +280,10 @@ void __zenith_libc_put_white_pixel(int x, int y) {
 
     long pixel_offset = ((y * __ZENITH_LIBC_FB_WIDTH) + x) * 3;
 
-    __zenith_libc_set_framebuffer_byte(pixel_offset + 0);
-    __zenith_libc_set_framebuffer_byte(pixel_offset + 1);
-    __zenith_libc_set_framebuffer_byte(pixel_offset + 2);
+    unsigned char *pixel = __ZENITH_LIBC_FB_PIXEL_BASE + pixel_offset;
+    pixel[0] = 255;
+    pixel[1] = 255;
+    pixel[2] = 255;
 }
 
 int __zenith_libc_ascii_font_pixel(unsigned char c, int x, int y) {
@@ -313,14 +304,23 @@ uint16_t __zenith_libc_cursor_x = 0;
 uint16_t __zenith_libc_cursor_y = 0;
 
 void __zenith_libc_draw_ascii_char(char c) {
-    if (c >= __ZENITH_LIBC_ASCII_FONT_COUNT) {
-        c = '?';
+    unsigned char code = c;
+    if (code >= __ZENITH_LIBC_ASCII_FONT_COUNT) {
+        return;
     }
 
+    int glyph_base = code * __ZENITH_LIBC_ASCII_FONT_HEIGHT;
+
     for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
+        unsigned char row = __ZENITH_LIBC_ASCII_BITMAP[glyph_base + gy];
+        if (row == 0) {
+            continue;
+        }
+
+        int pixel_y = __zenith_libc_cursor_y + gy;
         for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
-            if (__zenith_libc_ascii_font_pixel(c, gx, gy)) {
-                __zenith_libc_put_white_pixel(__zenith_libc_cursor_x + gx, __zenith_libc_cursor_y + gy);
+            if ((row >> (7 - gx)) & 1) {
+                __zenith_libc_put_white_pixel(__zenith_libc_cursor_x + gx, pixel_y);
             }
         }
     }
