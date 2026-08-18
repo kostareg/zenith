@@ -326,6 +326,19 @@ void __zenith_libc_draw_ascii_char(char c) {
     }
 }
 
+void __zenith_libc_erase_char() {
+    for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
+        for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
+            long pixel_offset = (((__zenith_libc_cursor_y + gy) * __ZENITH_LIBC_FB_WIDTH) + (__zenith_libc_cursor_x + gx)) * 3;
+            unsigned char *pixel = __ZENITH_LIBC_FB_PIXEL_BASE + pixel_offset;
+
+            pixel[0] = 0;
+            pixel[1] = 0;
+            pixel[2] = 0;
+        }
+    }
+}
+
 char __zenith_libc_int_to_char(int digit) {
     if (digit < 0) return '?';
     if (digit > 9) return '?';
@@ -385,6 +398,9 @@ void printf(char *word) {
         if (*word == '\n') {
             __zenith_libc_cursor_x = 0;
             __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 3;
+        } else if (*word == '\b') {
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x - __ZENITH_LIBC_ASCII_FONT_WIDTH;
+            __zenith_libc_erase_char(' ');
         } else {
             __zenith_libc_draw_ascii_char(*word);
             __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
@@ -528,8 +544,10 @@ void scanf(char* c) {
                 c[i] = 0;
                 printf("\n");
                 return;
-            } else if (key_code == 42) {
+            } else if (key_code == 42 && i > 0) {
+                // backspace
                 --i;
+                printf("\b");
                 continue;
             }
 
