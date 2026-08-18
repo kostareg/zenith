@@ -21,7 +21,7 @@ module memory_controller(
     output logic mem_ready
 );
     // todo: this is fake 4kiB RAM
-    logic [7:0] mem [0:4095];
+/*    logic [7:0] mem [0:4095];
     initial begin
         // addi z1, z0, 5
         mem[0] = 8'h84;
@@ -82,5 +82,5 @@ module memory_controller(
         end else begin
             mem_ready <= 1'b0;
         end
-    end
+    end*/
 endmodule
