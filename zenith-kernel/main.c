@@ -11,7 +11,9 @@ int main() {
         char line[100] = {};
         printf("$ ");
         scanf(line);
-        if (strcmp(line, "test")) {
+        if (strcmp(line, "")) {
+            continue;
+        } else if (strcmp(line, "test")) {
             printf("ran test command\n");
         } else {
             printf("command not found\n");
