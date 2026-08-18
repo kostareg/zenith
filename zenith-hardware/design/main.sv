@@ -78,6 +78,7 @@ module main (
         .alu_op(alu_op),
         .alu_out(alu_out)
     );
+    mig_7series_0 memtest();
 
     assign signed_data_a = data_a;
     assign signed_data_b = data_b;
