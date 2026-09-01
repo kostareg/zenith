@@ -3,6 +3,13 @@
 #define __ZENITH_LIBC_ASCII_FONT_FIRST 0
 #define __ZENITH_LIBC_ASCII_FONT_COUNT 128
 
+#define __ZENITH_LIBC_FONT_SCALE 2
+
+#define __ZENITH_LIBC_CELL_WIDTH (__ZENITH_LIBC_ASCII_FONT_WIDTH * __ZENITH_LIBC_FONT_SCALE)
+#define __ZENITH_LIBC_CELL_HEIGHT (__ZENITH_LIBC_ASCII_FONT_HEIGHT * __ZENITH_LIBC_FONT_SCALE)
+
+#define __ZENITH_LIBC_LINE_HEIGHT (__ZENITH_LIBC_CELL_HEIGHT + (3 * __ZENITH_LIBC_FONT_SCALE))
+
 uint8_t __ZENITH_LIBC_ASCII_BITMAP[__ZENITH_LIBC_ASCII_FONT_COUNT * __ZENITH_LIBC_ASCII_FONT_HEIGHT] = {
     /* 0x00 NUL */
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -317,18 +324,23 @@ void __zenith_libc_draw_ascii_char(char c) {
             continue;
         }
 
-        int pixel_y = __zenith_libc_cursor_y + gy;
+        int pixel_y = __zenith_libc_cursor_y + (gy * __ZENITH_LIBC_FONT_SCALE);
         for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
             if ((row >> (7 - gx)) & 1) {
-                __zenith_libc_put_white_pixel(__zenith_libc_cursor_x + gx, pixel_y);
+                int pixel_x = __zenith_libc_cursor_x + (gx * __ZENITH_LIBC_FONT_SCALE);
+                for (int sy = 0; sy < __ZENITH_LIBC_FONT_SCALE; sy++) {
+                    for (int sx = 0; sx < __ZENITH_LIBC_FONT_SCALE; sx++) {
+                        __zenith_libc_put_white_pixel(pixel_x + sx, pixel_y + sy);
+                    }
+                }
             }
         }
     }
 }
 
 void __zenith_libc_erase_char() {
-    for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
-        for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
+    for (int gy = 0; gy < __ZENITH_LIBC_CELL_HEIGHT; gy++) {
+        for (int gx = 0; gx < __ZENITH_LIBC_CELL_WIDTH; gx++) {
             long pixel_offset = (((__zenith_libc_cursor_y + gy) * __ZENITH_LIBC_FB_WIDTH) + (__zenith_libc_cursor_x + gx)) * 3;
             unsigned char *pixel = __ZENITH_LIBC_FB_PIXEL_BASE + pixel_offset;
 
@@ -349,12 +361,12 @@ char __zenith_libc_int_to_char(int digit) {
 void __zenith_libc_print_char(char c) {
     if (c == '\n') {
         __zenith_libc_cursor_x = 0;
-        __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 10;
+        __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_LINE_HEIGHT;
         return;
     }
 
     __zenith_libc_draw_ascii_char(c);
-    __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+    __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_CELL_WIDTH;
 }
 
 void __zenith_libc_print_int(int value) {
@@ -397,13 +409,13 @@ void printf(char *word) {
     while (*word) {
         if (*word == '\n') {
             __zenith_libc_cursor_x = 0;
-            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 3;
+            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_LINE_HEIGHT;
         } else if (*word == '\b') {
-            __zenith_libc_cursor_x = __zenith_libc_cursor_x - __ZENITH_LIBC_ASCII_FONT_WIDTH;
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x - __ZENITH_LIBC_CELL_WIDTH;
             __zenith_libc_erase_char(' ');
         } else {
             __zenith_libc_draw_ascii_char(*word);
-            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_CELL_WIDTH;
         }
         ++word;
     }
@@ -423,7 +435,7 @@ void printf_ints(char* word, int* xs) {
     while (*word) {
         if (*word == '\n') {
             __zenith_libc_cursor_x = 0;
-            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_ASCII_FONT_HEIGHT + 3;
+            __zenith_libc_cursor_y = __zenith_libc_cursor_y + __ZENITH_LIBC_LINE_HEIGHT;
         } else if (*word == '%') {
             ++word;
             if (*word == 'd') {
@@ -432,25 +444,11 @@ void printf_ints(char* word, int* xs) {
             }
         } else {
             __zenith_libc_draw_ascii_char(*word);
-            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_ASCII_FONT_WIDTH;
+            __zenith_libc_cursor_x = __zenith_libc_cursor_x + __ZENITH_LIBC_CELL_WIDTH;
         }
         ++word;
     }
 }
-
-// void draw_ascii_char_scaled(int x, int y, char c, int scale) {
-//     for (int gy = 0; gy < __ZENITH_LIBC_ASCII_FONT_HEIGHT; gy++) {
-//         for (int gx = 0; gx < __ZENITH_LIBC_ASCII_FONT_WIDTH; gx++) {
-//             if (__zenith_libc_ascii_font_pixel(c, gx, gy)) {
-//                 for (int sy = 0; sy < scale; sy++) {
-//                     for (int sx = 0; sx < scale; sx++) {
-//                         __zenith_libc_put_white_pixel(x + gx * scale + sx, y + gy * scale + sy);
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
 
 char hid_to_ascii(uint32_t key_code) {
     switch (key_code) {
